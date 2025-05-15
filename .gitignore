@@ -33,6 +33,5 @@ go.work.sum
 .idea
 .vscode
 
-# IDE
-.idea
-.vscode
+# MacOS
+*.DS_Store
