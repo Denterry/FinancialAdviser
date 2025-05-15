@@ -1,3 +1,0 @@
-"Model inference overview": https://cloud.google.com/bigquery/docs/inference-overview
-"What is the Inference model?": https://medium.com/@talal.atef.801/inference-model-8fa2058fce8e
-
