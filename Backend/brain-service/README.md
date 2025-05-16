@@ -1,133 +1,115 @@
-# Brain Service
+# Financial Adviser Brain Service
 
-A microservice for handling financial analysis and recommendations, built with Go and following clean architecture principles.
+AI-powered financial analysis and recommendations service that processes user queries about financial instruments and provides intelligent insights and recommendations.
 
 ## Features
 
-- Financial data analysis and processing
-- Investment recommendations generation
-- Market trend analysis
-- gRPC API
-- PostgreSQL database
-- Docker support
-- Clean architecture
+- Natural language processing of financial queries
+- Integration with external services for market data and sentiment analysis
+- AI-powered analysis and recommendations using OpenAI's GPT models
+- RESTful API for easy integration with other services
 
 ## Prerequisites
 
-- Go 1.21 or higher
-- Docker and Docker Compose
-- PostgreSQL 15 or higher
+- Python 3.8+
+- OpenAI API key
+- Access to external services (sentiment analysis and price prediction)
 
-## Getting Started
+## Setup
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/Denterry/FinancialAdviser.git
-cd Backend/brain-service
+git clone <repository-url>
+cd brain-service
 ```
 
-2. Install dependencies:
+2. Create and activate a virtual environment:
 ```bash
-go mod download
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-3. Set up the database:
+3. Install dependencies:
 ```bash
-make migrate-up
+pip install -r requirements.txt
 ```
 
-4. Run the service:
-```bash
-make run
+4. Create a `.env` file in the root directory with the following variables:
+```env
+OPENAI_API_KEY=your_api_key_here
+SENTIMENT_SERVICE_URL=http://sentiment-service:8000
+PREDICTION_SERVICE_URL=http://prediction-service:8000
+CORS_ORIGINS=["http://localhost:3000"]
 ```
 
-Or using Docker:
+## Running the Service
+
+Start the service with:
 ```bash
-make docker-build
-make docker-run
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+The service will be available at `http://localhost:8000`.
 
 ## API Documentation
 
-The service exposes a gRPC API on port 50051. You can find the protocol buffer definitions in the `internal/controller/grpc/proto` directory
+Once the service is running, you can access the interactive API documentation at:
+- Swagger UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
+
+### Main Endpoints
+
+- `POST /api/v1/query`: Process a financial query and get analysis/recommendations
+  ```json
+  {
+    "user_id": "string",
+    "query": "string",
+    "user_context": {
+      "risk_profile": "string",
+      "investment_preferences": ["string"]
+    }
+  }
+  ```
+
+- `GET /health`: Health check endpoint
 
 ## Development
 
-### Generate Protocol Buffers
-```bash
-make proto-all
-```
-
-### Running Tests
-
-```bash
-make test
-```
-
-### Linting
-
-```bash
-make lint
-```
-
-### Database Migrations
-
-To create a new migration:
-```bash
-migrate create -ext sql -dir migrations -seq migration_name
-```
-
-To apply migrations:
-```bash
-make migrate-up
-```
-
-To rollback migrations:
-```bash
-make migrate-down
-```
-
-
-## Project Structure
+### Project Structure
 
 ```
-.
-├── cmd/
-│   └── app/
-│       └── main.go
-├── config/
-│   └── config.yaml
-├── internal/
-│   ├── app/
-│   │   └── app.go
-│   ├── controller/
-│   │   └── grpc/
-│   │       └── brain.go
-│   ├── entity/
-│   │   └── analysis.go
-│   ├── repo/
-│   │   ├── contracts.go
-│   │   └── persistent/
-│   │       └── analysis_postgres.go
-│   └── usecase/
-│       └── analysis/
-│           ├── analysis.go
-│           └── recommendation.go
-├── migrations/
-│   └── 000001_init.up.sql
-├── pkg/
-│   ├── config/
-│   │   └── config.go
-│   ├── grpcserver/
-│   │   └── server.go
-│   ├── logger/
-│   │   └── logger.go
-│   └── postgres/
-│       └── postgres.go
-├── Dockerfile
-├── docker-compose.yml
-├── go.mod
-├── go.sum
-├── Makefile
+brain-service/
+├── app/
+│   ├── api/
+│   │   └── router.py
+│   ├── core/
+│   │   ├── config.py
+│   │   └── llm_client.py
+│   ├── services/
+│   │   ├── prompt_builder.py
+│   │   └── query_handler.py
+│   ├── utils/
+│   │   └── ticker_extractor.py
+│   └── main.py
+├── requirements.txt
 └── README.md
 ```
+
+### Adding New Features
+
+1. Create new modules in the appropriate directories
+2. Update the router to include new endpoints
+3. Add new dependencies to requirements.txt if needed
+4. Update the README with new features and documentation
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

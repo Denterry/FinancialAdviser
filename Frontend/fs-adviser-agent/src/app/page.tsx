@@ -1,4 +1,3 @@
-// File: src/app/page.tsx
 import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
@@ -20,12 +19,20 @@ export default async function HomePage() {
         {!user && (
           <>
             <Link href="/signin">
-              <Button variant="outline" size="lg">
+              <Button 
+                variant="outline" 
+                size="lg"
+                className="hover:text-blue-600 transition-colors"
+              >
                 Sign In
               </Button>
             </Link>
             <Link href="/signup">
-              <Button variant="outline" size="lg">
+              <Button 
+                variant="outline" 
+                size="lg"
+                className="hover:text-blue-600 transition-colors"
+              >
                 Sign Up
               </Button>
             </Link>
@@ -43,9 +50,18 @@ export default async function HomePage() {
             Leverage AI-powered sentiment analysis and reinforcement learning
             to make smarter financial and real estate investments.
           </p>
-          {user && (
+          {!user && (
+            // <Link href="/chat">
+            //   <Button size="lg" className="mt-4">
+            //     Go to Chat
+            //   </Button>
+            // </Link>
             <Link href="/chat">
-              <Button size="lg" className="mt-4">
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="mt-8 px-8 py-6 text-xl font-semibold bg-white hover:bg-gray-100 hover:text-blue-600 text-black border-2 border-white transition-colors"
+              >
                 Go to Chat
               </Button>
             </Link>
@@ -66,7 +82,7 @@ export default async function HomePage() {
               className="object-contain"
             />
           </div>
-          <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+          <span className="text-sm text-muted-foreground group-hover:text-foreground hover:text-blue-600 transition-colors">
             About Project
           </span>
         </div>

@@ -1,52 +1,65 @@
-"use client";
-import { DrizzleChat } from "@/lib/db/schema";
-import Link from "next/link";
-import React from "react";
-import { Button } from "./ui/button";
-import { MessageCircle, PlusCircle, Home } from "lucide-react";
-import { cn } from "@/lib/utils";
+'use client';
 
-type Props = {
-  chats: DrizzleChat[];
-  chatId: number;
+import React from 'react';
+import Link from 'next/link';
+import { Button } from './ui/button';
+import { Home, MessageCircle, Plus } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+type Chat = {
+  id: number;
+  title: string;
 };
 
-const ChatSideBar = ({ chats, chatId }: Props) => {
-  const [loading, setLoading] = React.useState(false);
+type Props = {
+  chats: Chat[];
+  selectedChatId: number | null;
+  onSelect: (chatId: number) => void;
+};
 
+const ChatSideBar: React.FC<Props> = ({ chats, selectedChatId, onSelect }) => {
   return (
-    <div className="w-full max-h-screen overflow-scroll soff h-screen p-4 text-gray-200 bg-blue-900">
-      <Link href="/">
-        <Button className="w-full border-dashed border-white border bg-gradient-to-r from-blue-700  to-gray-600">
-          <PlusCircle className="mr-2 w-4 h-4" />
-          Новый чат
-        </Button>
-      </Link>
+    <aside className="w-full h-screen overflow-y-auto bg-gradient-to-b from-blue-900 to-gray-800 text-white p-4">
+      <div className="flex flex-col gap-4">
+        {/* New Chat Button */}
+        <Link href="/chat">
+          <Button className="w-full bg-gradient-to-r from-blue-700 to-gray-600 border border-white border-dashed text-white hover:opacity-90">
+            <Plus className="mr-2 w-4 h-4" />
+            New Chat
+          </Button>
+        </Link>
 
-      <div className="flex pb-20 flex-col gap-2 mt-4 ">
-        {chats.map((chat) => (
-          <Link key={chat.id} href={`/chat/${chat.id}`}>
-            <div
-              className={cn("rounded-lg p-3 text-slate-300 flex items-center", {
-                "bg-gradient-to-r from-blue-700 to-gray-600 text-white": chat.id === chatId,
-                "hover:text-white": chat.id !== chatId,
-              })}
+        {/* List of Chats */}
+        <div className="flex flex-col gap-2 mt-2">
+          {chats.length === 0 && (
+            <p className="text-sm text-gray-300 italic">No chats yet.</p>
+          )}
+
+          {chats.map((chat) => (
+            <button
+              key={chat.id}
+              onClick={() => onSelect(chat.id)}
+              className={cn(
+                'flex items-center gap-2 p-3 rounded-lg text-sm text-slate-300 transition-colors',
+                chat.id === selectedChatId
+                  ? 'bg-gradient-to-r from-blue-700 to-gray-600 text-white'
+                  : 'hover:text-white hover:bg-gray-700'
+              )}
             >
-              <MessageCircle className="mr-2" />
-              <p className="w-full overflow-hidden text-sm truncate whitespace-nowrap text-ellipsis">
-                  {chat.pdfName}
-              </p>
-            </div>
-          </Link>
-        ))}
+              <MessageCircle className="w-4 h-4" />
+              <span className="truncate">{chat.title}</span>
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="absolute bottom-10 left-3">
-            <div className="flex items-center gap-2 text-sm text-gray-300 flex-wrap">
-                <Link href='/'><Home size="2.5em"/></Link>
-                {/* {Payment Button} */}
-            </div>
+
+      {/* Footer */}
+      <div className="absolute bottom-6 left-4">
+        <Link href="/">
+          <Home className="w-6 h-6 text-gray-300 hover:text-white transition-colors" />
+        </Link>
       </div>
-    </div>
+    </aside>
   );
 };
 

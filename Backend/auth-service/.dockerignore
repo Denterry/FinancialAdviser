@@ -3,8 +3,6 @@
 .github
 nginx
 
-.dockerignore
-.env
 .env.example
 .golangci.yml
 .gitignore

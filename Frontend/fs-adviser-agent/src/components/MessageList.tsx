@@ -1,46 +1,45 @@
-import { cn } from "@/lib/utils";
-import { Message } from "ai/react";
-import { Loader2 } from "lucide-react";
+"use client";
+import { Message } from "ai";
 import React from "react";
+import { cn } from "@/lib/utils";
 
-type Props = {
-  isLoading: boolean;
+type MessageListProps = {
   messages: Message[];
+  isLoading?: boolean;
 };
 
-const MessageList = ({ messages, isLoading }: Props) => {
+const MessageList: React.FC<MessageListProps> = ({ messages, isLoading }) => {
   if (isLoading) {
     return (
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-        <Loader2 className="w-6 h-6 animate-spin" />
+      <div className="p-4 text-center text-muted-foreground">
+        Loading messages...
       </div>
     );
   }
-  if (!messages) return <></>;
+
+  if (!messages.length) {
+    return (
+      <div className="p-4 text-center text-muted-foreground">
+        No messages yet.
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col gap-2 px-4">
-      {messages.map((message) => {
-        return (
-          <div
-            key={message.id}
-            className={cn("flex", {
-              "justify-end pl-10": message.role === "user",
-              "justify-start pr-10": message.role === "assistant",
-            })}
-          >
-            <div
-              className={cn(
-                "mb-1 rounded-lg px-3 text-sm py-1 shadow-md ring-1 ring-gray-900/10",
-                {
-                  "bg-gradient-to-r from-blue-700 to-gray-600 text-white": message.role === "user",
-                }
-              )}
-            >
-              <p>{message.content}</p>
-            </div>
-          </div>
-        );
-      })}
+    <div className="flex flex-col gap-4 px-4 py-2">
+      {messages.map((msg) => (
+        <div
+          key={msg.id}
+          className={cn(
+            "p-3 rounded-md max-w-xl shadow text-sm whitespace-pre-wrap",
+            msg.role === "user"
+              ? "bg-gradient-to-r from-blue-600 to-gray-600 text-white self-end"
+              : "bg-gray-100 text-gray-800 self-start"
+          )}
+        >
+          {msg.content}
+        </div>
+      ))}
     </div>
   );
 };

@@ -1,20 +1,29 @@
-FROM golang:1.21-alpine AS builder
+# Step 1: Modules caching
+FROM golang:1.24.2-alpine3.21 as modules
 
-WORKDIR /app
+COPY go.mod go.sum /modules/
 
-COPY go.mod go.sum ./
+WORKDIR /modules
+
 RUN go mod download
 
-COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o x-service ./cmd/app
+# Step 2: Builder
+FROM golang:1.24.2-alpine3.21 as builder
 
-FROM alpine:latest
+COPY --from=modules /go/pkg /go/pkg
+COPY . /app
 
 WORKDIR /app
 
-COPY --from=builder /app/x-service .
-COPY --from=builder /app/config/config.yaml ./config/
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -tags migrate -o /bin/app ./cmd/app
 
-EXPOSE 50051
+# Step 3: Final
+FROM scratch
 
-CMD ["./x-service"]
+COPY --from=builder /app/config /config
+COPY --from=builder /app/migrations /migrations
+COPY --from=builder /bin/app /app
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
+CMD ["/app"]
