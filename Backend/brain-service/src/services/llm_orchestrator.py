@@ -36,20 +36,14 @@ class ChatOrchestrator:
             chat_id,
         )
 
-        # Extract tickers from user query
         tickers = extract_tickers_from_text(message)
-
-        # Collect financial context in parallel
         context_lines = await self._gather_context_lines(tickers)
 
-        # Build LLM prompt (system + context + user)
         prompt_messages = build_chat_prompt(message, context_lines)
 
-        # Call the LLM
         llm_raw_response = await call_openai(prompt_messages)
         llm_final_response = append_disclaimer(llm_raw_response)
 
-        # Store the full chat history
         await self.chat_store.store_message(
             chat_id,
             role="user",
