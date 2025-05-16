@@ -1,5 +1,6 @@
 -- +goose Up
 -- +migrate Up
+-- +goose StatementBegin
 CREATE MATERIALIZED VIEW tweet_search_mv AS
 SELECT  t.id,
         t.text,
@@ -20,3 +21,4 @@ CREATE INDEX tweet_search_mv_created_at_idx
 -- refresh helper
 CREATE OR REPLACE FUNCTION refresh_tweet_search_mv() RETURNS void LANGUAGE sql AS
 $$ REFRESH MATERIALIZED VIEW CONCURRENTLY tweet_search_mv; $$;
+-- +goose StatementEnd

@@ -10,13 +10,12 @@ import (
 	twitterscraper "github.com/n0madic/twitter-scraper"
 )
 
-// Common patterns for financial symbols
 var (
-	// Matches $AAPL, $BTC, etc.
+	// Matches $AAPL, $BTC, etc
 	dollarSymbolPattern = regexp.MustCompile(`\$([A-Z]{1,5})`)
-	// Matches #AAPL, #BTC, etc.
+	// Matches #AAPL, #BTC, etc
 	hashtagSymbolPattern = regexp.MustCompile(`#([A-Z]{1,5})`)
-	// Matches standalone symbols like AAPL, BTC, etc.
+	// Matches standalone symbols like AAPL, BTC, etc
 	standaloneSymbolPattern = regexp.MustCompile(`\b([A-Z]{1,5})\b`)
 )
 
@@ -84,6 +83,7 @@ func isUpperCase(s string) bool {
 			return false
 		}
 	}
+
 	return true
 }
 

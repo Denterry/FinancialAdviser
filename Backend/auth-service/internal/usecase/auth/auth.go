@@ -19,8 +19,8 @@ type UseCase struct {
 	tokenTTL time.Duration
 }
 
-// NewUseCase creates a new instance of authentication UseCase
-func NewUseCase(userRepo repo.UserRepository, jwtKey string, tokenTTL int) *UseCase {
+// New creates a new instance of authentication UseCase
+func New(userRepo repo.UserRepository, jwtKey string, tokenTTL int) *UseCase {
 	return &UseCase{
 		userRepo: userRepo,
 		jwtKey:   []byte(jwtKey),

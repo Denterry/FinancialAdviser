@@ -3,7 +3,7 @@ FROM golang:1.24.2-alpine3.21 as modules
 
 WORKDIR /modules
 COPY go.mod go.sum ./
-RUN go mod download
+RUN go mod download && go mod verify
 
 # Step 2: Builder
 FROM golang:1.24.2-alpine3.21 as builder
@@ -27,5 +27,8 @@ COPY --from=builder /app/config /config
 COPY --from=builder /app/migrations /migrations
 COPY --from=builder /app/app /app
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
+EXPOSE 50051
+EXPOSE 9090
 
 CMD ["/app"]

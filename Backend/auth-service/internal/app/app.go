@@ -23,6 +23,7 @@ func Run(cfg *config.Config) {
 
 	l.Info("Starting %s v%s", cfg.App.Name, cfg.App.Version)
 
+	// initialize postgres
 	pg, err := postgres.New(
 		cfg.PG.URL,
 		postgres.MaxPoolSize(cfg.PG.PoolMax),
@@ -37,7 +38,7 @@ func Run(cfg *config.Config) {
 
 	// repository and use case
 	userRepository := persistent.NewUserPostgres(pg)
-	authUseCase := auth.NewUseCase(
+	authUseCase := auth.New(
 		userRepository,
 		cfg.JWT.Secret,
 		cfg.JWT.AccessTTL,
@@ -45,13 +46,14 @@ func Run(cfg *config.Config) {
 
 	// GRPC Server
 	gs := grpcServer.New(
-		grpcServer.Port(":"+cfg.GRPC.Port),
+		grpcServer.Port("0.0.0.0:"+cfg.GRPC.Port),
 		grpcServer.MaxStreams(cfg.GRPC.MaxConcurrentStreams),
 		grpcServer.TLS(cfg.TLS.CertFile, cfg.TLS.KeyFile),
 	)
 
 	// register services
 	gs.Serve(func(s *grpc.Server) {
+		// register all services with the same server instance
 		authv1.RegisterAuthServiceServer(s, grpcController.NewAuthService(authUseCase))
 	})
 	l.Info("gRPC server listening on " + cfg.GRPC.Port)
@@ -59,7 +61,6 @@ func Run(cfg *config.Config) {
 	// waiting signal
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
-
 	select {
 	case s := <-interrupt:
 		l.Info("app - Run - signal: %s", s.String())

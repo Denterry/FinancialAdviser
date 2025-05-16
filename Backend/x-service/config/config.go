@@ -82,17 +82,23 @@ type (
 	}
 	// XAPI -.
 	XAPI struct {
-		BearerToken string   `env:"X_TOKEN"`
-		StreamRules []string `env:"X_STREAM_RULES" envSeparator:","`
+		BaseURL           string   `env:"X_API_BASE_URL,required"`
+		BearerToken       string   `env:"X_API_BEARER_TOKEN,required"`
+		StreamRules       []string `env:"X_API_STREAM_RULES" envSeparator:","`
+		ConsumerKey       string   `env:"X_API_CONSUMER_KEY"`
+		ConsumerSecret    string   `env:"X_API_CONSUMER_SECRET"`
+		AccessToken       string   `env:"X_API_ACCESS_TOKEN"`
+		AccessTokenSecret string   `env:"X_API_ACCESS_TOKEN_SECRET"`
 	}
 	// XScraper -.
 	XScraper struct {
-		DelaySec     int    `env:"X_DELAY"      envDefault:"2"`
-		UseAppLogin  bool   `env:"X_APP_LOGIN"  envDefault:"true"`
-		Username     string `env:"X_USER"`
-		Password     string `env:"X_PASS"`
-		Proxy        string `env:"X_PROXY"`
-		IncludeReply bool   `env:"X_REPLIES"    envDefault:"false"`
+		DelaySec     int    `env:"X_SCRAPER_DELAY"      envDefault:"2"`
+		UseAppLogin  bool   `env:"X_SCRAPER_APP_LOGIN"  envDefault:"true"`
+		Username     string `env:"X_SCRAPER_USER"`
+		Password     string `env:"X_SCRAPER_PASS"`
+		Email        string `env:"X_SCRAPER_EMAIL"`
+		Proxy        string `env:"X_SCRAPER_PROXY"`
+		IncludeReply bool   `env:"X_SCRAPER_REPLIES"    envDefault:"false"`
 	}
 
 	// TLS -.

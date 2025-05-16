@@ -49,7 +49,7 @@ make docker-run
 
 ## API Documentation
 
-The service exposes a gRPC API on port 50051. You can find the protocol buffer definitions in the `internal/controller/grpc/proto` directory
+The service exposes a gRPC API on port 9090. You can find the protocol buffer definitions in the `internal/controller/grpc/proto` directory
 
 ## Development
 

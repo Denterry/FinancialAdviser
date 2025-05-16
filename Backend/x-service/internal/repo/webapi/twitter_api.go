@@ -2,15 +2,14 @@ package webapi
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
-	"net/url"
+	"strings"
 	"time"
 
 	"github.com/Denterry/FinancialAdviser/Backend/x-service/config"
 	"github.com/Denterry/FinancialAdviser/Backend/x-service/internal/entity"
+	"github.com/g8rswimmer/go-twitter/v2"
 	"github.com/google/uuid"
 )
 
@@ -18,131 +17,118 @@ const (
 	twitterSearchEndpoint = "https://api.twitter.com/2/tweets/search/recent"
 )
 
-// TwitterAPI implements the official Twitter v2 "Recent Search" endpoint
-type TwitterAPI struct {
-	client      *http.Client
-	bearerToken string
+type authorize struct {
+	Token string
 }
 
-// NewTwitterAPI constructs a v2 client using the bearer token in cfg.XProvider.BearerToken
+func (a authorize) Add(req *http.Request) {
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", a.Token))
+}
+
+// TwitterAPI implements repo.SocialFetcher using go-twitter/v2
+type TwitterAPI struct {
+	client *twitter.Client
+}
+
+// NewTwitterAPI constructs a TwitterAPI using the given config
 func NewTwitterAPI(cfg config.XProvider) (*TwitterAPI, error) {
 	if cfg.XAPI.BearerToken == "" {
-		return nil, fmt.Errorf("X_TOKEN must be set for api mode")
+		return nil, fmt.Errorf("X_API_BEARER_TOKEN must be set for api mode")
 	}
-	return &TwitterAPI{
-		client:      &http.Client{Timeout: 10 * time.Second},
-		bearerToken: cfg.XAPI.BearerToken,
-	}, nil
+
+	// src := oauth2.StaticTokenSource(&oauth2.Token{
+	// 	AccessToken: cfg.XAPI.BearerToken,
+	// })
+	// httpClient := oauth2.NewClient(context.Background(), src)
+
+	client := &twitter.Client{
+		Authorizer: authorize{
+			Token: cfg.XAPI.BearerToken,
+		},
+		Client: http.DefaultClient,
+		Host:   cfg.XAPI.BaseURL,
+	}
+
+	return &TwitterAPI{client: client}, nil
 }
 
-// SearchTweets calls the twitter API and decodes the JSON
+// SearchTweets performs a recent search via Twitter API
 func (api *TwitterAPI) SearchTweets(ctx context.Context, query string, max int) ([]*entity.Tweet, error) {
-	u, err := url.Parse(twitterSearchEndpoint)
+	opts := twitter.TweetRecentSearchOpts{
+		MaxResults: max,
+		Expansions: []twitter.Expansion{
+			twitter.ExpansionAuthorID,
+		},
+		TweetFields: []twitter.TweetField{
+			twitter.TweetFieldCreatedAt,
+			twitter.TweetFieldLanguage,
+			twitter.TweetFieldPublicMetrics,
+			twitter.TweetFieldEntities,
+		},
+		UserFields: []twitter.UserField{
+			twitter.UserFieldUserName,
+		},
+	}
+
+	resp, err := api.client.TweetRecentSearch(ctx, query, opts)
 	if err != nil {
-		return nil, fmt.Errorf("url.Parse(): %w", err)
+		return nil, fmt.Errorf("TweetRecentSearch error: %w", err)
 	}
-
-	q := u.Query()
-	q.Set("query", query)
-	q.Set("max_results", fmt.Sprintf("%d", max))
-
-	// required fields for tweet data
-	q.Set("tweet.fields", "author_id,created_at,lang,public_metrics,entities")
-
-	// required for user information
-	q.Set("expansions", "author_id")
-	q.Set("user.fields", "username")
-
-	// required for media information
-	q.Set("media.fields", "url,preview_image_url,type")
-
-	u.RawQuery = q.Encode()
-
-	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
-	if err != nil {
-		return nil, fmt.Errorf("http.NewRequestWithContext(): %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+api.bearerToken)
-
-	resp, err := api.client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("api.client.Do(): %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("io.ReadAll(): %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("twitter api status %d: %s", resp.StatusCode, string(body))
-	}
-
-	var wrapper struct {
-		Data []struct {
-			ID            string    `json:"id"`
-			Text          string    `json:"text"`
-			AuthorID      string    `json:"author_id"`
-			CreatedAt     time.Time `json:"created_at"`
-			Lang          string    `json:"lang"`
-			PublicMetrics struct {
-				RetweetCount int `json:"retweet_count"`
-				ReplyCount   int `json:"reply_count"`
-				LikeCount    int `json:"like_count"`
-				QuoteCount   int `json:"quote_count"`
-			} `json:"public_metrics"`
-			Entities struct {
-				URLs []struct {
-					URL         string `json:"url"`
-					ExpandedURL string `json:"expanded_url"`
-				} `json:"urls"`
-			} `json:"entities"`
-		} `json:"data"`
-		Includes struct {
-			Users []struct {
-				ID       string `json:"id"`
-				Username string `json:"username"`
-			} `json:"users"`
-		} `json:"includes"`
-	}
-
-	if err := json.Unmarshal(body, &wrapper); err != nil {
-		return nil, fmt.Errorf("json.Unmarshal(): %w", err)
+	if resp.RateLimit != nil {
+		fmt.Printf("Rate limit: %d remaining, resets at %v\n", resp.RateLimit.Remaining, resp.RateLimit.Reset)
 	}
 
 	userMap := make(map[string]string)
-	for _, user := range wrapper.Includes.Users {
-		userMap[user.ID] = user.Username
+	for _, user := range resp.Raw.Includes.Users {
+		userMap[user.ID] = user.UserName
 	}
 
 	now := time.Now().UTC()
-	out := make([]*entity.Tweet, 0, len(wrapper.Data))
-	for _, d := range wrapper.Data {
-		// extract URLs from entities
-		urls := make([]string, 0, len(d.Entities.URLs))
-		for _, u := range d.Entities.URLs {
-			urls = append(urls, u.ExpandedURL)
+	var results []*entity.Tweet
+
+	for _, t := range resp.Raw.Tweets {
+		var urls []string
+		if t.Entities != nil {
+			for _, u := range t.Entities.URLs {
+				if u.ExpandedURL != "" {
+					urls = append(urls, u.ExpandedURL)
+				}
+			}
 		}
 
-		t := &entity.Tweet{
-			ID:        uuid.MustParse(d.ID),
-			Text:      d.Text,
-			Lang:      d.Lang,
-			AuthorID:  d.AuthorID,
-			UserName:  userMap[d.AuthorID],
-			CreatedAt: d.CreatedAt,
-			FetchedAt: now,
-			UpdatedAt: now,
-			Likes:     d.PublicMetrics.LikeCount,
-			Replies:   d.PublicMetrics.ReplyCount,
-			Retweets:  d.PublicMetrics.RetweetCount,
-			Views:     0,
-			URLs:      urls,
-			Photos:    nil, // TODO: Extract from media attachments
-			Videos:    nil, // TODO: Extract from media attachments
+		createdAt, err := time.Parse(time.RFC3339, t.CreatedAt)
+		if err != nil {
+			return nil, fmt.Errorf("time.Parse(): %w", err)
 		}
-		out = append(out, t)
+
+		userName := userMap[t.AuthorID]
+		if userName == "" {
+			userName = "unknown"
+		}
+
+		symbols := extractSymbols(t.Text, nil)
+		isFinancial := len(symbols) > 0
+
+		results = append(results, &entity.Tweet{
+			ID:          uuid.MustParse(t.ID),
+			Text:        t.Text,
+			Lang:        strings.ToLower(t.Language),
+			AuthorID:    t.AuthorID,
+			UserName:    userName,
+			CreatedAt:   createdAt,
+			FetchedAt:   now,
+			UpdatedAt:   now,
+			Likes:       t.PublicMetrics.Likes,
+			Replies:     t.PublicMetrics.Replies,
+			Retweets:    t.PublicMetrics.Retweets,
+			Views:       0,
+			URLs:        urls,
+			Photos:      nil,
+			Videos:      nil,
+			IsFinancial: isFinancial,
+			Symbols:     nil,
+		})
 	}
-	return out, nil
+
+	return results, nil
 }

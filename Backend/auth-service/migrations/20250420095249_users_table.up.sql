@@ -2,7 +2,7 @@
 -- +migrate Up
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     username varchar(255) NOT NULL,
     email varchar(255) NOT NULL UNIQUE,
     password_hash varchar(255) NOT NULL,

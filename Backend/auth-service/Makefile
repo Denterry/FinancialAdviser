@@ -51,10 +51,6 @@ run: deps swag-v1 ### swag run for API v1
 	CGO_ENABLED=0 go run -tags migrate ./cmd/app
 .PHONY: run
 
-docker-rm-volume: ### remove docker volume
-	docker volume rm go-clean-template_pg-data
-.PHONY: docker-rm-volume
-
 linter-golangci: ### check by golangci linter
 	golangci-lint run
 .PHONY: linter-golangci

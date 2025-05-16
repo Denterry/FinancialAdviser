@@ -7,8 +7,6 @@ INTEGRATION_TEST_STACK = $(BASE_STACK) -f docker-compose-integration-test.yml
 ALL_STACK = $(INTEGRATION_TEST_STACK)
 
 # HELP =================================================================================================================
-# This will output the help for each task
-# thanks to https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
 .PHONY: help
 
 help: ## Display this help screen
@@ -52,10 +50,6 @@ run: deps swag-v1 ### swag run for API v1
 	CGO_ENABLED=0 go run -tags migrate ./cmd/app
 .PHONY: run
 
-docker-rm-volume: ### remove docker volume
-	docker volume rm go-clean-template_pg-data
-.PHONY: docker-rm-volume
-
 linter-golangci: ### check by golangci linter
 	golangci-lint run
 .PHONY: linter-golangci
@@ -86,11 +80,11 @@ migrate-create:  ### create new migration
 .PHONY: migrate-create
 
 migrate-up: ### migration up
-	migrate -path migrations -database '$(PG_URL)?sslmode=disable' up
+	migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/x-db?sslmode=disable" up
 .PHONY: migrate-up
 
 migrate-down:
-	migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/x_service?sslmode=disable" down
+	migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/x-db?sslmode=disable" down
 
 bin-deps: ### install tools
 	GOBIN=$(LOCAL_BIN) go install tool
@@ -170,4 +164,4 @@ proto-tweets: proto-install ### generate only tweets proto file
 		--go_opt=paths=source_relative \
 		--go-grpc_out=../../../../$(PROTO_OUT) \
 		--go-grpc_opt=paths=source_relative \
-		auth/v1/auth_service.proto
+		tweets/v1/tweets.proto

@@ -19,8 +19,8 @@ type Tweet struct {
 	UserName string `db:"username" json:"username"`
 
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
-	FetchedAt time.Time `db:"fetched_at" json:"fetched_at"` // when scraped / ingested it
-	UpdatedAt time.Time `db:"updated_at" json:"updated_at"` // last update in DB
+	FetchedAt time.Time `db:"fetched_at" json:"fetched_at"`
+	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 
 	// engagement metrics – point-in-time snapshot
 	Likes    int `db:"likes" json:"likes"`
@@ -29,15 +29,15 @@ type Tweet struct {
 	Views    int `db:"views" json:"views"`
 
 	// media / entities
-	URLs   []string `db:"urls" json:"urls"`     // string array in Postgres
-	Photos []string `db:"photos" json:"photos"` // ditto
+	URLs   []string `db:"urls" json:"urls"`
+	Photos []string `db:"photos" json:"photos"`
 	Videos []string `db:"videos" json:"videos"`
 
 	// financial enrichment
 	IsFinancial    bool     `db:"is_financial" json:"is_financial"`
-	Symbols        []string `db:"symbols" json:"symbols"`                 // ["TSLA", "BTC", ...]
+	Symbols        []string `db:"symbols" json:"symbols"`
 	SentimentScore float64  `db:"sentiment_score" json:"sentiment_score"` // range –1 .. 1
-	SentimentLabel string   `db:"sentiment_label" json:"sentiment_label"` // "POS", "NEG", "NEU"
+	SentimentLabel string   `db:"sentiment_label" json:"sentiment_label"`
 }
 
 // NewTweet creates a new Tweet instance

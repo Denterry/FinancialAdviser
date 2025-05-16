@@ -2,6 +2,7 @@ package persistent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -10,9 +11,12 @@ import (
 	"github.com/Denterry/FinancialAdviser/Backend/x-service/internal/repo"
 	"github.com/Denterry/FinancialAdviser/Backend/x-service/pkg/postgres"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
-const tweetsTbl = "tweets"
+const (
+	tweetsTbl = "tweets"
+)
 
 // TweetRepository implements repo.TweetRepository backed by Postgres
 type TweetRepository struct {
@@ -56,7 +60,11 @@ func (r *TweetRepository) Create(ctx context.Context, t *entity.Tweet) error {
 		t.IsFinancial, t.SentimentScore, t.SentimentLabel,
 	)
 	if err != nil {
-		return fmt.Errorf("tx.Exec(): %w", err)
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == repo.UniqueViolationErr.Code {
+			return repo.ErrDuplicateTweet
+		}
+		return fmt.Errorf("tx.Exec(INSERT INTO tweets): %w", err)
 	}
 
 	if len(t.Symbols) > 0 {
@@ -73,12 +81,12 @@ func (r *TweetRepository) Create(ctx context.Context, t *entity.Tweet) error {
 
 			_, err = tx.Exec(ctx, querySymbols, s, entity.SymbolTypeEquity, s)
 			if err != nil {
-				return fmt.Errorf("tx.Exec(symbols): %w", err)
+				return fmt.Errorf("tx.Exec(INSERT INTO symbols): %w", err)
 			}
 
 			_, err = tx.Exec(ctx, queryTweetSymbols, t.ID, s)
 			if err != nil {
-				return fmt.Errorf("tx.Exec(tweet_symbols): %w", err)
+				return fmt.Errorf("tx.Exec(INSERT INTO tweet_symbols): %w", err)
 			}
 		}
 	}
@@ -108,7 +116,11 @@ func (r *TweetRepository) Delete(ctx context.Context, id uuid.UUID) error {
 		DELETE FROM tweets WHERE id = $1
 	`
 	_, err := r.Pool.Exec(ctx, query, id)
-	return err
+	if err != nil {
+		return fmt.Errorf("r.Pool.Exec(DELETE FROM tweets): %w", err)
+	}
+
+	return nil
 }
 
 // Update updates basic editable fields + engagement / sentiment
@@ -126,7 +138,11 @@ func (r *TweetRepository) Update(ctx context.Context, t *entity.Tweet) error {
 		t.SentimentScore, t.SentimentLabel,
 		time.Now().UTC(), t.ID,
 	)
-	return err
+	if err != nil {
+		return fmt.Errorf("r.Pool.Exec(UPDATE tweets): %w", err)
+	}
+
+	return nil
 }
 
 // List returns tweets by various optional filters
@@ -144,7 +160,7 @@ func (r *TweetRepository) List(ctx context.Context, f repo.TweetFilter) ([]*enti
 	sqlSuffix, args := buildFilter(f)
 	rows, err := r.Pool.Query(ctx, query+sqlSuffix, args...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("r.Pool.Query(SELECT FROM tweets): %w", err)
 	}
 	defer rows.Close()
 
@@ -177,7 +193,7 @@ func (r *TweetRepository) ListBySymbol(ctx context.Context, symbol string, limit
 
 	rows, err := r.Pool.Query(ctx, query, strings.ToUpper(symbol), limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("r.Pool.Query(SELECT FROM tweets): %w", err)
 	}
 	defer rows.Close()
 
@@ -192,7 +208,7 @@ func (r *TweetRepository) ListBySymbol(ctx context.Context, symbol string, limit
 	return res, rows.Err()
 }
 
-// ListBySentiment returns tweets by sentiment label.
+// ListBySentiment returns tweets by sentiment label
 func (r *TweetRepository) ListBySentiment(ctx context.Context, label string, limit, offset int32) ([]*entity.Tweet, error) {
 	query := `
 		SELECT
@@ -209,7 +225,7 @@ func (r *TweetRepository) ListBySentiment(ctx context.Context, label string, lim
 
 	rows, err := r.Pool.Query(ctx, query, label, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("r.Pool.Query(SELECT FROM tweets): %w", err)
 	}
 	defer rows.Close()
 

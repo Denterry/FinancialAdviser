@@ -1,13 +1,15 @@
 -- +goose Up
 -- +migrate Up
+-- +goose StatementBegin
 CREATE TABLE provider_failures (
-    id          bigserial PRIMARY KEY,
+    id          BIGSERIAL PRIMARY KEY,
     provider    provider_enum NOT NULL,
-    at          timestamptz   NOT NULL DEFAULT now(),
-    code        int,
-    body        text
+    at          TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    code        INT,
+    body        TEXT
 );
 
+-- COMMENTS
 COMMENT ON TABLE provider_failures IS 'Provider failures';
 COMMENT ON COLUMN provider_failures.id IS 'Unique identifier for the provider failure';
 COMMENT ON COLUMN provider_failures.provider IS 'Provider of the provider failure';
@@ -26,3 +28,4 @@ END $$;
 CREATE TRIGGER provider_failures_trim_trg
 AFTER INSERT ON provider_failures
 EXECUTE PROCEDURE provider_failures_trim();
+-- +goose StatementEnd

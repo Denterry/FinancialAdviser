@@ -1,6 +1,6 @@
 -- +goose Up
 -- +migrate Up
-
+-- +goose StatementBegin
 CREATE TABLE articles (
     id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     provider      provider_enum NOT NULL,
@@ -18,6 +18,7 @@ CREATE TABLE articles (
     raw_payload   jsonb
 );
 
+-- COMMENTS
 COMMENT ON TABLE articles IS 'Articles';
 COMMENT ON COLUMN articles.id IS 'Unique identifier for the article';
 COMMENT ON COLUMN articles.provider IS 'Provider of the article';
@@ -32,5 +33,7 @@ COMMENT ON COLUMN articles.sentiment_score IS 'Sentiment score of the article';
 COMMENT ON COLUMN articles.sentiment_label IS 'Sentiment label of the article';
 COMMENT ON COLUMN articles.raw_payload IS 'Raw payload of the article';
 
+-- INDEXES
 CREATE UNIQUE INDEX articles_provider_url_uq
     ON articles(provider, url);
+-- +goose StatementEnd

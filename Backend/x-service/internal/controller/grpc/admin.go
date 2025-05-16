@@ -13,21 +13,21 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// AdminTweetService is a gRPC service for admin operations on tweets
 type AdminTweetService struct {
 	adminpb.UnimplementedAdminTweetServiceServer
 	adminTweetUseCase *admin.UseCase
 }
 
+// NewAdminTweetService creates a new AdminTweetService
 func NewAdminTweetService(adminTweetUseCase *admin.UseCase) *AdminTweetService {
 	return &AdminTweetService{
 		adminTweetUseCase: adminTweetUseCase,
 	}
 }
 
-func (s *AdminTweetService) CreateTweet(
-	ctx context.Context,
-	req *adminpb.CreateTweetRequest,
-) (*adminpb.CreateTweetResponse, error) {
+// CreateTweet creates a new tweet in the database
+func (s *AdminTweetService) CreateTweet(ctx context.Context, req *adminpb.CreateTweetRequest) (*adminpb.CreateTweetResponse, error) {
 	if req.GetText() == "" {
 		return nil, status.Error(codes.InvalidArgument, "text is required")
 	}
@@ -45,6 +45,7 @@ func (s *AdminTweetService) CreateTweet(
 	}, nil
 }
 
+// GetTweet retrieves a tweet from the database
 func (s *AdminTweetService) GetTweet(ctx context.Context, req *adminpb.GetTweetRequest) (*adminpb.GetTweetResponse, error) {
 	if req.GetId() == "" {
 		return nil, status.Error(codes.InvalidArgument, "id is required")
@@ -57,7 +58,7 @@ func (s *AdminTweetService) GetTweet(ctx context.Context, req *adminpb.GetTweetR
 
 	tweet, err := s.adminTweetUseCase.Get(ctx, id)
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("s.adminTweetUseCase.Get(): %v", err))
+		return nil, status.Error(codes.NotFound, fmt.Sprintf("s.adminTweetUseCase.Get(): %v", err))
 	}
 
 	return &adminpb.GetTweetResponse{
@@ -65,6 +66,7 @@ func (s *AdminTweetService) GetTweet(ctx context.Context, req *adminpb.GetTweetR
 	}, nil
 }
 
+// ListTweets lists tweets from the database
 func (s *AdminTweetService) ListTweets(ctx context.Context, req *adminpb.ListTweetsRequest) (*adminpb.ListTweetsResponse, error) {
 	filter := repo.TweetFilter{
 		AuthorID:       req.AuthorId,
@@ -86,7 +88,7 @@ func (s *AdminTweetService) ListTweets(ctx context.Context, req *adminpb.ListTwe
 
 	tweets, err := s.adminTweetUseCase.List(ctx, filter)
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("s.adminTweetUseCase.List(): %v", err))
+		return nil, status.Error(codes.NotFound, fmt.Sprintf("s.adminTweetUseCase.List(): %v", err))
 	}
 
 	response := &adminpb.ListTweetsResponse{
@@ -100,6 +102,7 @@ func (s *AdminTweetService) ListTweets(ctx context.Context, req *adminpb.ListTwe
 	return response, nil
 }
 
+// UpdateTweet updates a tweet in the database
 func (s *AdminTweetService) UpdateTweet(ctx context.Context, req *adminpb.UpdateTweetRequest) (*adminpb.UpdateTweetResponse, error) {
 	if req.GetId() == "" {
 		return nil, status.Error(codes.InvalidArgument, "id is required")
@@ -135,6 +138,7 @@ func (s *AdminTweetService) UpdateTweet(ctx context.Context, req *adminpb.Update
 	return &adminpb.UpdateTweetResponse{Tweet: toProtoAdminTweet(tweet)}, nil
 }
 
+// DeleteTweet deletes a tweet from the database
 func (s *AdminTweetService) DeleteTweet(ctx context.Context, req *adminpb.DeleteTweetRequest) (*adminpb.DeleteTweetResponse, error) {
 	if req.GetId() == "" {
 		return nil, status.Error(codes.InvalidArgument, "id is required")
@@ -159,7 +163,7 @@ func (s *AdminTweetService) GetTweetsBySymbol(ctx context.Context, req *adminpb.
 
 	tweets, err := s.adminTweetUseCase.GetTweetsBySymbol(ctx, req.GetSymbol(), req.GetLimit(), req.GetOffset())
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("s.adminTweetUseCase.GetTweetsBySymbol(): %v", err))
+		return nil, status.Error(codes.NotFound, fmt.Sprintf("s.adminTweetUseCase.GetTweetsBySymbol(): %v", err))
 	}
 
 	response := &adminpb.GetTweetsBySymbolResponse{
@@ -173,6 +177,7 @@ func (s *AdminTweetService) GetTweetsBySymbol(ctx context.Context, req *adminpb.
 	return response, nil
 }
 
+// GetTweetsBySentiment retrieves tweets by sentiment from the database
 func (s *AdminTweetService) GetTweetsBySentiment(ctx context.Context, req *adminpb.GetTweetsBySentimentRequest) (*adminpb.GetTweetsBySentimentResponse, error) {
 	if req.GetLabel() == "" {
 		return nil, status.Error(codes.InvalidArgument, "label is required")
@@ -180,7 +185,7 @@ func (s *AdminTweetService) GetTweetsBySentiment(ctx context.Context, req *admin
 
 	tweets, err := s.adminTweetUseCase.GetTweetsBySentiment(ctx, req.GetLabel(), req.GetLimit(), req.GetOffset())
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("s.adminTweetUseCase.GetTweetsBySentiment(): %v", err))
+		return nil, status.Error(codes.NotFound, fmt.Sprintf("s.adminTweetUseCase.GetTweetsBySentiment(): %v", err))
 	}
 
 	response := &adminpb.GetTweetsBySentimentResponse{

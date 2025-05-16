@@ -1,6 +1,7 @@
 package grpc
 
 import (
+	"strings"
 	"time"
 
 	"github.com/Denterry/FinancialAdviser/Backend/x-service/internal/entity"
@@ -45,8 +46,8 @@ func toEntityAdminTweet(t *adminpb.Tweet) *entity.Tweet {
 		AuthorID:       t.AuthorId,
 		CreatedAt:      time.Unix(t.CreatedAt, 0),
 		UpdatedAt:      time.Unix(t.UpdatedAt, 0),
-		SentimentScore: t.Sentiment.Score,
-		SentimentLabel: t.Sentiment.Label,
+		SentimentScore: t.Sentiment.GetScore(),
+		SentimentLabel: t.Sentiment.GetLabel(),
 		IsFinancial:    t.IsFinancial,
 		Symbols:        t.Symbols,
 		Retweets:       int(t.Engagement.RetweetCount),
@@ -65,7 +66,7 @@ func toProtoTweet(t *entity.Tweet) *tweetspb.Tweet {
 		AuthorId:  t.AuthorID,
 		Username:  t.UserName,
 		Text:      t.Text,
-		Lang:      t.Lang,
+		Lang:      strings.ToLower(t.Lang),
 		CreatedAt: t.CreatedAt.Unix(),
 		FetchedAt: t.FetchedAt.Unix(),
 		Likes:     int32(t.Likes),

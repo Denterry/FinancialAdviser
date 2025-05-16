@@ -1,4 +1,3 @@
-// Package app configures and runs application.
 package app
 
 import (
@@ -20,9 +19,11 @@ import (
 	"google.golang.org/grpc"
 )
 
-// Run creates objects via constructors.
+// Run creates objects via constructors
 func Run(cfg *config.Config) {
 	l := logger.New(cfg.Log.Level)
+
+	l.Info("Starting %s v%s", cfg.App.Name, cfg.App.Version)
 
 	// initialize postgres
 	pg, err := postgres.New(
@@ -52,7 +53,7 @@ func Run(cfg *config.Config) {
 
 	// GRPC server
 	gs := grpcserver.New(
-		grpcserver.Port(cfg.GRPC.Port),
+		grpcserver.Port("0.0.0.0:"+cfg.GRPC.Port),
 		grpcserver.MaxStreams(cfg.GRPC.MaxConcurrentStreams),
 		grpcserver.TLS(cfg.TLS.CertFile, cfg.TLS.KeyFile),
 	)

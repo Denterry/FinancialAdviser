@@ -1,14 +1,15 @@
-version: "3.9"
+version: '3.9'
+
 services:
   # Postgres database for auth-service
-  db:
+  auth-db:
     image: postgres:17-alpine
     container_name: auth_db
     restart: always
     environment:
-      POSTGRES_DB: "${POSTGRES_DB:-db}"
-      POSTGRES_USER: "${POSTGRES_USER:-user}"
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-myAwEsOm3pa55@w0rd}"
+      POSTGRES_DB: "${PG_DB:-auth-db}"
+      POSTGRES_USER: "${PG_USER:-user}"
+      POSTGRES_PASSWORD: "${PG_PASSWORD:-myAwEsOm3pa55@w0rd}"
     volumes:
       - auth_db_data:/var/lib/postgresql/data
     ports:
@@ -16,7 +17,7 @@ services:
     networks:
       - auth_net
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} -h localhost -p 5432"]
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER} -d ${PG_DB} -p 5432"]
       interval: 5s
       retries: 5
 
@@ -32,7 +33,7 @@ services:
       - "${HTTP_PORT:-8080}:8080"
       - "${GRPC_PORT:-9090}:9090"
     depends_on:
-      db:
+      auth-db:
         condition: service_healthy
     networks:
       - auth_net

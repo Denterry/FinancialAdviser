@@ -2,6 +2,7 @@ package tweet
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -41,11 +42,13 @@ func (uc *UseCase) Ingest(ctx context.Context, query string, maxResults int) ([]
 
 	// 2) persist each one
 	for _, t := range fresh {
-		// ensure FetchedAt/UpdatedAt set
 		t.FetchedAt = now
 		t.UpdatedAt = now
 
 		if err := uc.tweetRepo.Create(ctx, t); err != nil {
+			if errors.Is(err, repo.ErrDuplicateTweet) {
+				continue // skip duplicate
+			}
 			return nil, fmt.Errorf("uc.tweetRepo.Create(): %w", err)
 		}
 		saved = append(saved, t)
@@ -54,7 +57,7 @@ func (uc *UseCase) Ingest(ctx context.Context, query string, maxResults int) ([]
 	return saved, nil
 }
 
-// GetListLatest returns the N most recent tweets ordered by fetched_at desc
+// GetListLatest returns the N most recent tweets ordered by created_at desc
 func (uc *UseCase) GetListLatest(ctx context.Context, limit int32) ([]*entity.Tweet, error) {
 	filter := repo.TweetFilter{
 		Limit:  limit,

@@ -1,15 +1,17 @@
 -- +goose Up
 -- +migrate Up
+-- +goose StatementBegin
 CREATE TABLE sentiment_daily_agg (
-    symbol          text        NOT NULL REFERENCES symbols(ticker),
-    day             date        NOT NULL,
-    avg_score       real        NOT NULL,
-    pos_cnt         int         NOT NULL,
-    neg_cnt         int         NOT NULL,
-    neu_cnt         int         NOT NULL,
+    symbol          TEXT        NOT NULL REFERENCES symbols(ticker),
+    day             DATE        NOT NULL,
+    avg_score       REAL        NOT NULL,
+    pos_cnt         INT         NOT NULL,
+    neg_cnt         INT         NOT NULL,
+    neu_cnt         INT         NOT NULL,
     PRIMARY KEY (symbol, day)
 );
 
+-- COMMENTS
 COMMENT ON TABLE sentiment_daily_agg IS 'Sentiment daily aggregate';
 COMMENT ON COLUMN sentiment_daily_agg.symbol IS 'Symbol of the sentiment daily aggregate';
 COMMENT ON COLUMN sentiment_daily_agg.day IS 'Day of the sentiment daily aggregate';
@@ -36,3 +38,4 @@ BEGIN
     WHERE t.sentiment_score IS NOT NULL
     GROUP BY s.symbol, day;
 END $$;
+-- +goose StatementEnd

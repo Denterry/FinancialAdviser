@@ -1,5 +1,6 @@
 -- +goose Up
 -- +migrate Up
+-- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS tweets (
     id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     author_id   VARCHAR(64)  NOT NULL REFERENCES authors(id) ON DELETE CASCADE,
@@ -27,6 +28,8 @@ CREATE TABLE IF NOT EXISTS tweets (
     raw_json    JSONB                                    -- original payload
 );
 
+
+-- COMMENTS
 COMMENT ON TABLE  tweets                   IS 'Ingested tweets / X posts';
 COMMENT ON COLUMN tweets.id                IS 'Snowflake Tweet ID';
 COMMENT ON COLUMN tweets.author_id         IS 'Snowflake User ID of author';
@@ -46,3 +49,9 @@ COMMENT ON COLUMN tweets.raw_json          IS 'Original JSON payload from twitte
 COMMENT ON COLUMN tweets.is_financial      IS 'Whether the tweet contains financial data';
 COMMENT ON COLUMN tweets.sentiment_score   IS 'Sentiment score of the tweet';
 COMMENT ON COLUMN tweets.sentiment_label   IS 'Sentiment label of the tweet';
+
+-- INDEXES
+CREATE INDEX IF NOT EXISTS idx_tweets_is_financial_created_at ON tweets(is_financial, created_at DESC) WHERE is_financial = true;
+CREATE INDEX IF NOT EXISTS idx_tweets_sentiment_score_sentiment_label ON tweets(sentiment_score, sentiment_label) WHERE sentiment_score IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_tweets_user_engagement ON tweets(author_id, created_at DESC, likes, retweets);
+-- +goose StatementEnd

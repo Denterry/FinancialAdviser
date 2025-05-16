@@ -1,5 +1,5 @@
 -- +goose Down
 -- +migrate Down
 -- +goose StatementBegin
-DROP TABLE IF EXISTS article_symbols;
+DROP EXTENSION IF EXISTS "uuid-ossp";
 -- +goose StatementEnd
