@@ -1,0 +1,46 @@
+version: '3.9'
+
+services:
+  # Postgres database for x-service
+  x-db:
+    image: postgres:17-alpine
+    container_name: x_db
+    restart: always
+    environment:
+      POSTGRES_DB: "${PG_DB:-x-db}"
+      POSTGRES_USER: "${PG_USER:-user}"
+      POSTGRES_PASSWORD: "${PG_PASSWORD:-myAwEsOm3pa55@w0rd}"
+    volumes:
+      - x_db_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - x_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER} -d ${PG_DB} -p 5432"]
+      interval: 5s
+      retries: 5
+
+  x-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: x-service
+    restart: on-failure
+    env_file:
+      - ./.env
+    ports:
+      - "${HTTP_PORT:-8080}:8080"
+      - "${GRPC_PORT:-9090}:9090"
+    depends_on:
+      x-db:
+        condition: service_healthy
+    networks:
+      - x_net
+
+volumes:
+  x_db_data:
+
+networks:
+  x_net:
+    driver: bridge

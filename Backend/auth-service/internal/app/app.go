@@ -20,7 +20,6 @@ import (
 // Run creates objects via constructors
 func Run(cfg *config.Config) {
 	l := logger.New(cfg.Log.Level)
-
 	l.Info("Starting %s v%s", cfg.App.Name, cfg.App.Version)
 
 	// initialize postgres

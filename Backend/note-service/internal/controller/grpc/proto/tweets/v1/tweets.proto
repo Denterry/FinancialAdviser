@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package tweets.v1;
+
+option go_package = "github.com/Denterry/FinancialAdviser/Backend/x-service/pkg/pb/tweets/v1;tweetspb";
+
+
+// --- SERVICE ---
+service TweetService {
+    // Pull fresh tweets/posts from X (Twitter) or other medias and
+    // persist them.  Returns how many posts were ingested in this run
+    rpc Ingest (IngestRequest) returns (IngestResponse);
+
+    // Return the newest N tweets we have stored, ordered by fetched_at desc
+    rpc ListLatestTweets (ListLatestTweetsRequest) returns (ListLatestTweetsResponse);
+
+    // Return one tweet by internal ID (UUID string).
+    rpc GetTweetByID (GetTweetByIDRequest) returns (GetTweetByIDResponse);
+}
+
+
+// --- REQUESTS & RESPONSES ---
+message IngestRequest {
+    string query = 1; // query to search for
+    int32 max = 2; // max number of tweets to ingest
+}
+message IngestResponse {
+    int32 ingested = 1; // number of tweets ingested
+}
+
+message ListLatestTweetsRequest {
+    int32 limit = 1; // max number of tweets to return
+}
+message ListLatestTweetsResponse {
+    repeated Tweet tweets = 1; // list of tweets
+}
+
+message GetTweetByIDRequest {
+    string id = 1; // tweet id
+}
+message GetTweetByIDResponse {
+    Tweet tweet = 1; // tweet
+}
+
+
+// --- ADVANCED MESSAGES ---
+message Tweet {
+    string id          = 1;   // UUID
+    string author_id   = 2;
+    string username    = 3;
+    string text        = 4;
+    string lang        = 5;
+    int64  created_at  = 6;   // unix seconds
+    int64  fetched_at  = 7;   // unix seconds (when we stored it)
+  
+    int32  likes       = 8;
+    int32  replies     = 9;
+    int32  retweets    = 10;
+    int32  views       = 11;
+  
+    repeated string urls   = 12; // list of urls
+    repeated string photos = 13; // list of photos
+    repeated string videos = 14; // list of videos
+}

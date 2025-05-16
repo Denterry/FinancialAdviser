@@ -1,36 +1,20 @@
-version: '3.8'
+version: '3.9'
 
 services:
   gateway-service:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: gateway-service
+    restart: on-failure
+    env_file:
+      - ./.env
     ports:
-      - "8080:8080"
-    environment:
-      - JWT_SECRET=your-secret-key
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-    depends_on:
-      - redis
-      - auth-service
-      - sub-service
-      - ml-service
+      - "${HTTP_PORT:-8080}:8080"
+      - "${GRPC_PORT:-9090}:9090"
     networks:
-      - financial-adviser-network
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - financial-adviser-network
+      - gateway_net
 
 networks:
-  financial-adviser-network:
-    external: true
-
-volumes:
-  redis_data: 
+  gateway_net:
+    driver: bridge

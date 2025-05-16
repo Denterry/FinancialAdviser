@@ -13,12 +13,6 @@ import (
 
 // makeToken creates a JWT-token for user
 func (uc *UseCase) makeToken(user *entity.User, currentTime time.Time) (string, error) {
-	// claims := jwt.RegisteredClaims{
-	// 	Subject:   user.ID.String(),
-	// 	IssuedAt:  jwt.NewNumericDate(currentTime),
-	// 	ExpiresAt: jwt.NewNumericDate(currentTime.Add(uc.tokenTTL)),
-	// }
-
 	claims := jwt.MapClaims{
 		"sub":      user.ID.String(),
 		"email":    user.Email,

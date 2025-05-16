@@ -19,44 +19,36 @@ The Gateway Service is a crucial component of the Financial Adviser platform tha
 - Go 1.21 or higher
 - Docker and Docker Compose
 - Redis
-- Access to other microservices (Auth, Subscription, ML)
+- Access to other microservices (Auth, Brain, Subscription, ML)
 
 ## Installation
 
 1. Clone the repository:
-   ```bash
-   git clone https://github.com/Denterry/FinancialAdviser.git
-   cd Backend/gateway-service
-   ```
+```bash
+git clone https://github.com/Denterry/FinancialAdviser.git
+cd Backend/gateway-service
+```
 
 2. Install dependencies:
-   ```bash
-   go mod download
-   ```
+```bash
+go mod download
+```
 
-3. Set up environment variables:
-   ```bash
-   cp config/config.yaml.example config/config.yaml
-   # Edit config/config.yaml with your settings
-   ```
+3. Set up the database:
+```bash
+make migrate-up
+```
 
-4. Build and run:
-   ```bash
-   make build
-   make run
-   ```
+4. Run the service:
+```bash
+make run
+```
 
-## Docker Deployment
+Or using Docker:
+```bash
+make docker-build
+make docker-run
 
-1. Build the Docker image:
-   ```bash
-   make docker-build
-   ```
-
-2. Run with Docker Compose:
-   ```bash
-   make docker-run
-   ```
 
 ## API Documentation
 
@@ -78,71 +70,6 @@ The Gateway Service is a crucial component of the Financial Adviser platform tha
 - `POST /api/ml/analyze` - Analyze financial data
 - `GET /api/ml/recommendations` - Get financial recommendations
 
-## Configuration
-
-The service can be configured using environment variables or the `config.yaml` file:
-
-```yaml
-server:
-  port: ":8080"
-  read_timeout: 5s
-  write_timeout: 10s
-
-services:
-  auth:
-    host: "auth-service"
-    port: ":50051"
-  subscription:
-    host: "sub-service"
-    port: ":50052"
-  ml:
-    host: "ml-service"
-    port: ":50053"
-
-redis:
-  host: "redis"
-  port: ":6379"
-  password: ""
-  db: 0
-
-jwt:
-  secret: "your-secret-key"
-  access_token_ttl: 15m
-  refresh_token_ttl: 720h
-  signing_method: "HS256"
-  signing_key: "your-signing-key"
-  verification_key: "your-verification-key"
-
-log:
-  level: "info"
-  file: "logs/gateway.log"
-```
-
-## Project Structure
-
-```
-.
-├── cmd/
-│   └── app/
-│       └── main.go
-├── internal/
-│   ├── config/
-│   │   └── config.go
-│   ├── handler/
-│   │   └── handler.go
-│   ├── middleware/
-│   │   └── middleware.go
-│   └── service/
-│       └── service.go
-├── config/
-│   └── config.yaml
-├── Dockerfile
-├── docker-compose.yml
-├── go.mod
-├── go.sum
-├── Makefile
-└── README.md
-```
 
 ## Development
 
@@ -172,6 +99,29 @@ make install-tools
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+## Project Structure
+
+```
+.
+├── cmd/
+│   └── app/
+│       └── main.go
+├── internal/
+│   ├── config/
+│   │   └── config.go
+│   ├── handler/
+│   │   └── handler.go
+│   ├── middleware/
+│   │   └── middleware.go
+│   └── service/
+│       └── service.go
+├── config/
+│   └── config.yaml
+├── Dockerfile
+├── docker-compose.yml
+├── go.mod
+├── go.sum
+├── Makefile
+└── README.md
+```
