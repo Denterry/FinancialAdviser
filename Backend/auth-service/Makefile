@@ -107,8 +107,7 @@ endif
 
 .PHONY: proto-clean proto-all proto-install
 
-# Install protoc plugins
-proto-install:
+proto-install: #### install protoc plugins
 	@echo "Installing protoc plugins..."
 	@echo "GOBIN: $(GOBIN)"
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
@@ -117,8 +116,7 @@ proto-install:
 	@test -f "$(GOBIN)/protoc-gen-go" || (echo "protoc-gen-go not found in $(GOBIN)" && exit 1)
 	@test -f "$(GOBIN)/protoc-gen-go-grpc" || (echo "protoc-gen-go-grpc not found in $(GOBIN)" && exit 1)
 
-# Generate all proto files
-proto-all: proto-install
+proto-all: proto-install ### generate all proto files
 	@echo "Generating all proto files..."
 	@PATH="$(GOBIN):$$PATH" find $(PROTO_DIR) -name "*.proto" -exec sh -c ' \
 		file_path="{}"; \
@@ -136,13 +134,11 @@ proto-all: proto-install
 			$$rel_path \
 	' \;
 
-# Clean generated proto files
-proto-clean:
+proto-clean: ### clean generated proto files
 	@echo "Cleaning generated proto files..."
 	@rm -rf $(PROTO_OUT)/*
 
-# Generate specific proto file
-proto: proto-install
+proto: proto-install ### generate specific proto file
 	@echo "Generating proto files..."
 	@mkdir -p $(PROTO_OUT)/auth/v1
 	@cd $(PROTO_DIR) && PATH="$(GOBIN):$$PATH" $(PROTOC) \

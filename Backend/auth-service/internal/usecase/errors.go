@@ -20,4 +20,7 @@ var (
 
 	// ErrInvalidUsername is returned when the username format is invalid
 	ErrInvalidUsername = errors.New("invalid username format")
+
+	// ErrInvalidCredentials is returned when the credentials are invalid
+	ErrInvalidCredentials = errors.New("invalid email or password")
 )

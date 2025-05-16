@@ -1,4 +1,3 @@
-// Package postgres implements postgres connection.
 package postgres
 
 import (
@@ -18,6 +17,9 @@ const (
 	_defaultMaxRetries   = 3
 	_defaultRetryDelay   = 3 * time.Second
 	_defaultHealthCheck  = 15 * time.Second
+
+	serviceName = "auth-service"
+	timeZone    = "UTC"
 )
 
 // Postgres represents PostgreSQL connection pool
@@ -45,7 +47,7 @@ func New(url string, opts ...Option) (*Postgres, error) {
 		healthCheck:  _defaultHealthCheck,
 	}
 
-	// Custom options
+	// custom options
 	for _, opt := range opts {
 		opt(pg)
 	}
@@ -59,8 +61,8 @@ func New(url string, opts ...Option) (*Postgres, error) {
 	poolConfig.MinConns = int32(pg.minConns)    //nolint:gosec // skip integer overflow conversion int -> int32
 	poolConfig.HealthCheckPeriod = pg.healthCheck
 
-	poolConfig.ConnConfig.RuntimeParams["application_name"] = "auth_service"
-	poolConfig.ConnConfig.RuntimeParams["timezone"] = "UTC"
+	poolConfig.ConnConfig.RuntimeParams["application_name"] = serviceName
+	poolConfig.ConnConfig.RuntimeParams["timezone"] = timeZone
 
 	for pg.connAttempts > 0 {
 		pg.Pool, err = pgxpool.NewWithConfig(context.Background(), poolConfig)

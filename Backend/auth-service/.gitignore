@@ -24,9 +24,9 @@ vendor/
 
 coverage.txt
 
-# env file
-.env
-
 # IDE
 .idea
 .vscode
+
+# MacOS
+.DS_Store

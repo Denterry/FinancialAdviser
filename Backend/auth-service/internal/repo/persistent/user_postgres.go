@@ -8,7 +8,7 @@ import (
 	"github.com/Denterry/FinancialAdviser/Backend/auth-service/internal/entity"
 	"github.com/Denterry/FinancialAdviser/Backend/auth-service/pkg/postgres"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 )
 
 const (
@@ -26,18 +26,21 @@ func NewUserPostgres(pg *postgres.Postgres) *UserRepository {
 }
 
 // Create creates a new user in the database
-func (r *UserRepository) Create(ctx context.Context, user *entity.User) error {
+func (r *UserRepository) Create(ctx context.Context, user *entity.User) (uuid.UUID, error) {
+	var returnedID uuid.UUID
 	if user.ID == uuid.Nil {
 		user.ID = uuid.New()
 	}
 	now := time.Now().UTC()
 	user.CreatedAt = now
+	returnedID = user.ID
 
 	const query = `
-		INSERT INTO users (id, email, password_hash, username, is_admin, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO users (id, email, password_hash, username, is_admin, created_at, updated_at) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7) 
+		RETURNING id
 	`
-	_, err := r.Pool.Exec(ctx, query,
+	err := r.Pool.QueryRow(ctx, query,
 		user.ID,           // $1
 		user.Email,        // $2
 		user.PasswordHash, // $3
@@ -45,12 +48,12 @@ func (r *UserRepository) Create(ctx context.Context, user *entity.User) error {
 		user.IsAdmin,      // $5
 		user.CreatedAt,    // $6
 		user.UpdatedAt,    // $7
-	)
+	).Scan(&returnedID)
 	if err != nil {
-		return fmt.Errorf("UserRepository - Create - r.Pool.Exec: %w", err)
+		return returnedID, fmt.Errorf("UserRepository - Create - r.Pool.Exec: %w", err)
 	}
 
-	return nil
+	return returnedID, nil
 }
 
 // GetByEmail retrieves a user by email
@@ -120,7 +123,7 @@ func (r *UserRepository) List(ctx context.Context) ([]*entity.User, error) {
 
 	for rows.Next() {
 		var user entity.User
-		err := rows.Scan(
+		err = rows.Scan(
 			&user.ID,
 			&user.Email,
 			&user.PasswordHash,
@@ -154,7 +157,7 @@ func (r *UserRepository) Update(ctx context.Context, user *entity.User) error {
 			updated_at = $5
 		WHERE id = $6
 	`
-	_, err := r.Pool.Exec(ctx, query,
+	res, err := r.Pool.Exec(ctx, query,
 		user.Email,        // $1
 		user.PasswordHash, // $2
 		user.Username,     // $3
@@ -164,6 +167,9 @@ func (r *UserRepository) Update(ctx context.Context, user *entity.User) error {
 	)
 	if err != nil {
 		return fmt.Errorf("UserRepository - Update - r.Pool.Exec: %w", err)
+	}
+	if res.RowsAffected() == 0 {
+		return fmt.Errorf("UserRepository - Update - r.Pool.Exec: user not found")
 	}
 
 	return nil

@@ -1,5 +1,3 @@
-//go:generate protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative ../../controller/grpc/proto/auth/v1/auth_service.proto
-
 package auth
 
 import (
@@ -11,6 +9,7 @@ import (
 
 	"github.com/Denterry/FinancialAdviser/Backend/auth-service/internal/entity"
 	"github.com/Denterry/FinancialAdviser/Backend/auth-service/internal/repo"
+	"github.com/Denterry/FinancialAdviser/Backend/auth-service/internal/usecase"
 )
 
 // UseCase implements the authentication use case
@@ -36,7 +35,7 @@ func (uc *UseCase) SignUp(ctx context.Context, email, password, username string)
 		return "", fmt.Errorf("uc.userRepo.GetByEmail(): %w", err)
 	}
 	if existingUser != nil {
-		return "", ErrUserAlreadyExists
+		return "", usecase.ErrUserAlreadyExists
 	}
 
 	// create & hash
@@ -46,13 +45,14 @@ func (uc *UseCase) SignUp(ctx context.Context, email, password, username string)
 		Username: username,
 		IsAdmin:  false,
 	}
-	if err := user.SetPassword(password); err != nil {
+	if err = user.SetPassword(password); err != nil {
 		return "", fmt.Errorf("user.SetPassword(): %w", err)
 	}
 	now := time.Now().UTC()
 	user.CreatedAt = now
 
-	if err := uc.userRepo.Create(ctx, user); err != nil {
+	_, err = uc.userRepo.Create(ctx, user)
+	if err != nil {
 		return "", fmt.Errorf("uc.userRepo.Create(): %w", err)
 	}
 
@@ -65,13 +65,10 @@ func (uc *UseCase) SignIn(ctx context.Context, email, password string) (string, 
 	if err != nil {
 		return "", fmt.Errorf("uc.userRepo.GetByEmail(): %w", err)
 	}
-	if user == nil {
-		return "", ErrUserNotFound
-	}
 
 	// password check
 	if user == nil || !user.CheckPassword(password) { // user == nil exactly means that email is not right
-		return "", ErrInvalidCredentials
+		return "", usecase.ErrInvalidCredentials
 	}
 
 	now := time.Now().UTC()

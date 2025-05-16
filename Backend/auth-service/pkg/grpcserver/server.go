@@ -3,6 +3,7 @@ package grpcserver
 import (
 	"crypto/tls"
 	"fmt"
+	"log"
 	"net"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 )
 
 const (
-	_defaultAddr     = ":9090"
+	_defaultAddr     = "0.0.0.0:9090"
 	_shutdownTimeout = 5 * time.Second
 )
 
@@ -46,8 +47,9 @@ func (s *Server) Serve(register func(*grpc.Server)) {
 	// set up TLS if requested
 	if s.tlsCert != "" && s.tlsKey != "" {
 		creds := credentials.NewServerTLSFromCert(&tls.Certificate{
-			Certificate: [][]byte{}, // loaded below
+			Certificate: [][]byte{},
 		})
+
 		// load actual cert
 		cert, err := tls.LoadX509KeyPair(s.tlsCert, s.tlsKey)
 		if err != nil {
@@ -68,6 +70,7 @@ func (s *Server) Serve(register func(*grpc.Server)) {
 	// listen
 	lis, err := net.Listen("tcp", s.address)
 	if err != nil {
+		log.Printf("net.Listen(%s): %w", s.address, err)
 		s.notify <- fmt.Errorf("net.Listen(%s): %w", s.address, err)
 		close(s.notify)
 		return
@@ -76,6 +79,7 @@ func (s *Server) Serve(register func(*grpc.Server)) {
 	go func() {
 		err := s.grpcServer.Serve(lis)
 		if err != nil {
+			log.Printf("Serve: %w", err)
 			s.notify <- fmt.Errorf("Serve: %w", err)
 		}
 		close(s.notify)
@@ -99,4 +103,9 @@ func (s *Server) GracefulStop(timeout time.Duration) {
 	case <-time.After(timeout):
 		s.grpcServer.Stop()
 	}
+}
+
+// GRPC returns the underlying gRPC server
+func (s *Server) GRPC() *grpc.Server {
+	return s.grpcServer
 }

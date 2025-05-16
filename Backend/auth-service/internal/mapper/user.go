@@ -1,4 +1,3 @@
-// Package mapper implements conversion between different data representations.
 package mapper
 
 import (

@@ -5,38 +5,38 @@ import (
 	"time"
 )
 
-// Option represents a function that configures the server
+// Option -.
 type Option func(*Server)
 
-// Port sets the server port
+// Port -.
 func Port(port string) Option {
 	return func(s *Server) {
 		s.address = net.JoinHostPort("", port)
 	}
 }
 
-// ReadTimeout sets the read timeout
+// ReadTimeout -.
 func ReadTimeout(timeout time.Duration) Option {
 	return func(s *Server) {
 		s.readTimeout = timeout
 	}
 }
 
-// WriteTimeout sets the write timeout
+// WriteTimeout -.
 func WriteTimeout(timeout time.Duration) Option {
 	return func(s *Server) {
 		s.writeTimeout = timeout
 	}
 }
 
-// ShutdownTimeout sets the shutdown timeout
+// ShutdownTimeout -.
 func ShutdownTimeout(timeout time.Duration) Option {
 	return func(s *Server) {
 		s.shutdownTimeout = timeout
 	}
 }
 
-// EnableTLS tells the server to serve over HTTPS using the provided cert and key files
+// EnableTLS -.
 func EnableTLS(certFile, keyFile string) Option {
 	return func(s *Server) {
 		s.tlsCert = certFile
@@ -44,7 +44,7 @@ func EnableTLS(certFile, keyFile string) Option {
 	}
 }
 
-// CORSConfig lets supply a Gin-compatible CORS configuration
+// CORSConfig -.
 func CORSConfig(cfg interface{}) Option {
 	return func(s *Server) {
 		s.corsConfig = cfg

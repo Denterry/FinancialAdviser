@@ -51,6 +51,7 @@ message ValidateTokenResponse {
     bool is_admin = 5;
 }
 
+
 // --- ADVANCED MESSAGES ---
 message User {
     string id = 1; // user UUID
