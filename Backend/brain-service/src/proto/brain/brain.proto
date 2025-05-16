@@ -1,0 +1,123 @@
+syntax = "proto3";
+
+package brain_service;
+
+option go_package = "github.com/Denterry/FinancialAdviser/Backend/brain-service/src/proto/brain;brainpb";
+
+
+// --- SERVICE ---
+/*
+ *  Цели API:
+ *  • Управлять чатами (CRUD)                                             
+ *  • Принимать сообщения пользователя и в реальном времени отдавать LLM-ответ
+ *  • Давать доступ фронту к истории сообщений                              
+ *  • Обеспечить health-check                                              
+ */
+service BrainService {
+    // CreateChat is used to create a new chat
+    rpc CreateChat   (CreateChatRequest)   returns (CreateChatResponse);
+    // ListChats is used to list the chats
+    rpc ListChats    (ListChatsRequest)    returns (ListChatsResponse);
+    // DeleteChat is used to delete the chat
+    rpc DeleteChat   (DeleteChatRequest)   returns (DeleteChatResponse);
+    // ListMessages is used to list the messages in the chat
+    rpc ListMessages (ListMessagesRequest) returns (ListMessagesResponse);
+    
+    // StreamMessage is used to stream the response from the LLM
+    rpc StreamMessage (StreamMessageRequest)
+        returns (stream StreamMessageResponse);
+
+    // Ping is used to check the health of the service
+    rpc Ping (PingRequest) returns (PingResponse);
+}
+
+
+
+// --- REQUESTS & RESPONSES ---
+enum Role {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_USER        = 1;
+  ROLE_ASSISTANT   = 2;
+  ROLE_SYSTEM      = 3;
+}
+
+
+message CreateChatRequest {
+  string user_id = 1;                // UUID из Auth-service
+  string title   = 2;
+}
+
+message Chat {
+  string id         = 1;
+  string user_id    = 2;
+  string title      = 3;
+  string created_at = 4;
+  string updated_at = 5;
+}
+
+message CreateChatResponse { Chat chat = 1; }
+
+message ListChatsRequest {
+  string user_id   = 1;
+  int32  page_size = 2;              // =0 → 20
+  string page_token = 3;             // cursor-based пагинация
+}
+
+message ListChatsResponse {
+  repeated Chat chats        = 1;
+  string next_page_token     = 2;    // пусто, если конец списка
+}
+
+message DeleteChatRequest {
+  string user_id = 1;
+  string chat_id = 2;
+}
+
+message DeleteChatResponse {}
+
+
+message Message {
+  int64  id          = 1;            // BIGSERIAL
+  string chat_id     = 2;
+  Role   role        = 3;
+  string content     = 4;
+  int32  token_count = 5;
+  string created_at  = 6;
+}
+
+message ListMessagesRequest {
+  string user_id   = 1;
+  string chat_id   = 2;
+  int32  page_size = 3;              // =0 → 50
+  string page_token = 4;
+}
+
+message ListMessagesResponse {
+  repeated Message messages      = 1;
+  string next_page_token         = 2;
+}
+
+
+// Клиент (Gateway / Frontend) шлёт одно пользовательское сообщение.
+// Brain-service: 
+//   • сохраняет его,
+//   • вызывает ML-service + LLM,
+//   • стримит ответ кусками.
+message StreamMessageRequest {
+  string user_id = 1;
+  string chat_id = 2;                // Если пусто → создать новый чат по умолчанию
+  string content = 3;                // Сообщение пользователя
+}
+
+// Кусок ответа ассистента.
+// Окончание стрима определяется EOF.
+// После is_final = true больше чанков не придёт.
+message StreamMessageResponse {
+  string content_chunk = 1;          // Delta-chunk текста ассистента
+  bool   is_final      = 2;          // true на последнем сообщении
+  int32  tokens_used   = 3;          // Суммарно для всего ответа (заполняется только на is_final)
+}
+
+
+message PingRequest  {}
+message PingResponse { string msg = 1; }

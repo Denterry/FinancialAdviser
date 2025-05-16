@@ -26,7 +26,7 @@ cd brain-service
 2. Create and activate a virtual environment:
 ```bash
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate
 ```
 
 3. Install dependencies:
@@ -75,26 +75,6 @@ Once the service is running, you can access the interactive API documentation at
 
 ## Development
 
-### Project Structure
-
-```
-brain-service/
-├── app/
-│   ├── api/
-│   │   └── router.py
-│   ├── core/
-│   │   ├── config.py
-│   │   └── llm_client.py
-│   ├── services/
-│   │   ├── prompt_builder.py
-│   │   └── query_handler.py
-│   ├── utils/
-│   │   └── ticker_extractor.py
-│   └── main.py
-├── requirements.txt
-└── README.md
-```
-
 ### Adding New Features
 
 1. Create new modules in the appropriate directories
@@ -110,6 +90,47 @@ brain-service/
 4. Push to the branch
 5. Create a Pull Request
 
-## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+### Project Structure
+
+```
+brain-service/
+├── docker-compose-integration-test.yml
+├── docker-compose.yml
+├── Dockerfile
+├── Makefile
+├── migrations
+│   ├── 20250525134008_uuid_ext.down.sql
+│   ├── 20250525134008_uuid_ext.up.sql
+│   ├── 20250525134009_chats_table.down.sql
+│   ├── 20250525134009_chats_table.up.sql
+│   ├── 20250525134026_messages_table.down.sql
+│   ├── 20250525134026_messages_table.up.sql
+│   ├── 20250609180124_update_updated_at_trigger.down.sql
+│   ├── 20250609180124_update_updated_at_trigger.up.sql
+│   ├── 20250609181040_llm_logs_table.down.sql
+│   ├── 20250609181040_llm_logs_table.up.sql
+│   ├── 20250609181542_user_usage_quota_table.down.sql
+│   └── 20250609181542_user_usage_quota_table.up.sql
+├── README.md
+├── requirements.txt
+└── src
+    ├── core
+    │   └── db.py
+    ├── grpc
+    │   └── server.py
+    ├── main.py
+    ├── proto
+    │   └── brain
+    │       └── brain.proto
+    ├── repo
+    │   ├── chats.py
+    │   └── messages.py
+    ├── services
+    │   ├── llm_orchestrator.py
+    │   └── ml_client.py
+    └── utils
+        ├── prompt_builder.py
+        ├── ticker_extractor.py
+        └── tokenizer.py
+```

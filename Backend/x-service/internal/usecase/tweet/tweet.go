@@ -47,7 +47,7 @@ func (uc *UseCase) Ingest(ctx context.Context, query string, maxResults int) ([]
 
 		if err := uc.tweetRepo.Create(ctx, t); err != nil {
 			if errors.Is(err, repo.ErrDuplicateTweet) {
-				continue // skip duplicate
+				continue
 			}
 			return nil, fmt.Errorf("uc.tweetRepo.Create(): %w", err)
 		}

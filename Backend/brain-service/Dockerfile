@@ -1,29 +1,35 @@
-# Step 1: Modules caching
-FROM golang:1.24.2-alpine3.21 as modules
+FROM python:3.12-slim AS builder
 
-COPY go.mod go.sum /modules/
-
-WORKDIR /modules
-
-RUN go mod download
-
-# Step 2: Builder
-FROM golang:1.24.2-alpine3.21 as builder
-
-COPY --from=modules /go/pkg /go/pkg
-COPY . /app
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -tags migrate -o /bin/app ./cmd/app
+COPY requirements.txt .
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --no-cache-dir --upgrade pip \
+ && pip install --no-cache-dir -r requirements.txt
 
-# Step 3: Final
-FROM scratch
+COPY . .
 
-COPY --from=builder /app/config /config
-COPY --from=builder /app/migrations /migrations
-COPY --from=builder /bin/app /app
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+RUN python -m grpc_tools.protoc \
+        -I src/proto \
+        --python_out=src/proto/brain \
+        --grpc_python_out=src/proto/brain \
+        src/proto/brain/brain.proto
 
-CMD ["/app"]
+RUN adduser --disabled-password --gecos "" appuser
+
+# Final Stage
+FROM python:3.12-slim
+
+WORKDIR /app
+
+COPY --from=builder /usr/local/lib/python*/site-packages /usr/local/lib/python*/site-packages
+COPY --from=builder /app /app
+
+USER appuser
+
+EXPOSE 9090 8080
+
+CMD ["python", "-m", "src.main"]

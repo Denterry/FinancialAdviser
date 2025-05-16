@@ -4,6 +4,8 @@ package ml_service;
 
 option go_package = "github.com/Denterry/FinancialAdviser/Backend/ml-service/proto";
 
+
+// --- SERVICE ---
 // ML Service definition
 service MLService {
   // Analyze sentiment of text
@@ -25,6 +27,9 @@ service MLService {
   rpc ExecuteTrade(TradingRequest) returns (TradeExecutionResponse) {}
 }
 
+
+
+// --- REQUESTS & RESPONSES ---
 // Sentiment Analysis
 message SentimentRequest {
   string text = 1;

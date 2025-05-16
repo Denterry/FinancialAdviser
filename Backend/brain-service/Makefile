@@ -120,54 +120,30 @@ install-protoc: ### install protobuf compiler and plugins
 
 
 # PROTO =================================================================================================================
-PROTO_DIR=internal/controller/grpc/proto
-PROTO_OUT=pkg/pb
-PROTOC=protoc
-PROTOC_OPTS=--go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative
-GOBIN=$(shell go env GOBIN)
-ifeq ($(GOBIN),)
-GOBIN=$(shell go env GOPATH)/bin
-endif
+PROTO_BRAIN := src/proto/brain/brain.proto
+PROTO_DIR   := $(dir $(PROTO_BRAIN))      # src/proto/brain
 
-.PHONY: proto-clean proto-all proto-install
+.PHONY: proto-install proto-go proto-py proto-all proto-clean
 
-proto-install: ### install protoc plugins
-	@echo "Installing protoc plugins..."
-	@echo "GOBIN: $(GOBIN)"
+proto-install:          ## plugins for Go & Python
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-	@echo "Verifying installations..."
-	@test -f "$(GOBIN)/protoc-gen-go" || (echo "protoc-gen-go not found in $(GOBIN)" && exit 1)
-	@test -f "$(GOBIN)/protoc-gen-go-grpc" || (echo "protoc-gen-go-grpc not found in $(GOBIN)" && exit 1)
+	pip install --quiet --upgrade grpcio-tools
 
-proto-all: proto-install ### generate all proto files
-	@echo "Generating all proto files..."
-	@PATH="$(GOBIN):$$PATH" find $(PROTO_DIR) -name "*.proto" -exec sh -c ' \
-		file_path="{}"; \
-		rel_path=$${file_path#$(PROTO_DIR)/}; \
-		service=$$(echo "$$rel_path" | cut -d/ -f1); \
-		version=$$(echo "$$rel_path" | cut -d/ -f2); \
-		file=$$(basename "$$file_path"); \
-		echo "Processing $$service/$$version/$$file"; \
-		mkdir -p $(PROTO_OUT)/$$service/$$version; \
-		cd $(PROTO_DIR) && $(PROTOC) \
-			--go_out=../../../../$(PROTO_OUT) \
-			--go_opt=paths=source_relative \
-			--go-grpc_out=../../../../$(PROTO_OUT) \
-			--go-grpc_opt=paths=source_relative \
-			$$rel_path \
-	' \;
+proto-go: proto-install ## Go stubs рядом с .proto
+	@echo "Generating Go stubs → $(PROTO_DIR)"
+	@PATH="$(GOBIN):$$PATH" protoc -I src/proto \
+		--go_out=. --go_opt=paths=source_relative \
+		--go-grpc_out=. --go-grpc_opt=paths=source_relative \
+		$(PROTO_BRAIN)
 
-proto-clean: ### clean generated proto files
-	@echo "Cleaning generated proto files..."
-	@rm -rf $(PROTO_OUT)/*
+proto-py: proto-install ## Python stubs рядом с .proto
+	@echo "Generating Python stubs → $(PROTO_DIR)"
+	@python -m grpc_tools.protoc -I src/proto \
+		--python_out=$(PROTO_DIR) --grpc_python_out=$(PROTO_DIR) \
+		$(PROTO_BRAIN)
 
-proto-tweets: proto-install ### generate only tweets proto file
-	@echo "Generating proto files..."
-	@mkdir -p $(PROTO_OUT)/tweets/v1
-	@cd $(PROTO_DIR) && PATH="$(GOBIN):$$PATH" $(PROTOC) \
-		--go_out=../../../../$(PROTO_OUT) \
-		--go_opt=paths=source_relative \
-		--go-grpc_out=../../../../$(PROTO_OUT) \
-		--go-grpc_opt=paths=source_relative \
-		auth/v1/auth_service.proto
+proto-all: proto-go proto-py  ## всё сразу
+
+proto-clean:                  ## удалить сгенерированные файлы
+	@rm -f $(PROTO_DIR)/*_pb.go $(PROTO_DIR)/*_pb2*.py

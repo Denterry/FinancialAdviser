@@ -1,87 +1,104 @@
-import asyncio
-from typing import Optional, Tuple, List
+from __future__ import annotations
 
-from utils.ticker_extractor import extract_tickers_from_text
-from utils.prompt_builder import build_chat_prompt, append_disclaimer
-from utils.llm_client import call_openai
-from services.data_fetcher import (
-    fetch_sentiment_summary,
-    fetch_price_prediction,
+import logging
+import os
+import time
+from typing import AsyncIterator, List, Tuple
+from uuid import UUID
+
+import openai
+from openai import AsyncOpenAI
+
+from repo.messages import MessageRepository
+from services.ml_client import MLClient
+from utils.tokenizer import rough_token_count
+
+from utils.prompt_builder import (
+    build_chat_prompt,
+    append_disclaimer,
 )
-from db.chat_storage import ChatHistory
+
+logger = logging.getLogger("brain.orchestrator")
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+OPENAI_TEMP = float(os.getenv("OPENAI_TEMPERATURE", "0.7"))
+HISTORY_LIMIT = int(os.getenv("CHAT_HISTORY_LIMIT", "20"))
 
 
-class ChatOrchestrator:
-    """
-    Orchestrates the full lifecycle of processing a chat message:
-    - Identifies tickers
-    - Gathers context from other services
-    - Builds a prompt
-    - Calls the LLM
-    - Stores chat history
-    """
-
-    def __init__(self):
-        self.chat_store = ChatHistory()
-
-    async def process_user_query(
+class LLMOrchestrator:
+    def __init__(
         self,
-        user_id: str,
-        message: str,
-        chat_id: Optional[int] = None
-    ) -> Tuple[str, int]:
-        # Start or resume a chat
-        chat_id = await self.chat_store.start_or_continue_chat(
-            user_id,
-            chat_id,
+        msg_repo: MessageRepository,
+        ml_client: MLClient,
+    ):
+        self.msg_repo = msg_repo
+        self.ml = ml_client
+        self.openai = AsyncOpenAI(api_key=OPENAI_API_KEY)
+
+    async def stream_response(
+        self, chat_id: UUID, user_message: str
+    ) -> AsyncIterator[Tuple[str, bool, int]]:
+        """
+        Генерирует (chunk, is_final, total_tokens)
+        """
+        # 1. история чата
+        history_rows, _ = await self.msg_repo.list_messages(
+            chat_id, limit=HISTORY_LIMIT
+        )
+        history_text = [
+            r["content"] for r in history_rows if r["role"] != "system"
+        ]
+
+        # 2. динамический sentiment
+        try:
+            senti = await self.ml.analyze_sentiment(user_message)
+            sentiment_line = f"Detected market sentiment: {senti['summary']}."
+        except Exception as e:
+            logger.warning("ML-service sentiment failed: %s", e)
+            sentiment_line = "Market sentiment: unavailable."
+
+        context_lines: List[str] = [sentiment_line]
+
+        # 3. финальный prompt
+        openai_messages = build_chat_prompt(
+            user_question=user_message,
+            context_lines=context_lines + history_text,  # история ⊕ контекст
         )
 
-        tickers = extract_tickers_from_text(message)
-        context_lines = await self._gather_context_lines(tickers)
+        start_ts = time.perf_counter()
+        assistant_chunks: List[str] = []
+        total_tokens = 0
 
-        prompt_messages = build_chat_prompt(message, context_lines)
+        try:
+            stream = await self.openai.chat.completions.create(
+                model=OPENAI_MODEL,
+                messages=openai_messages,
+                temperature=OPENAI_TEMP,
+                stream=True,
+            )
+            async for part in stream:
+                delta = part.choices[0].delta.content or ""
+                if delta:
+                    assistant_chunks.append(delta)
+                    total_tokens += rough_token_count(delta)
+                    yield delta, False, 0
+        except openai.OpenAIError as e:
+            err_msg = f"[LLM error] {str(e)}"
+            logger.error(err_msg)
+            yield err_msg, True, 0
+            return
 
-        llm_raw_response = await call_openai(prompt_messages)
-        llm_final_response = append_disclaimer(llm_raw_response)
+        latency_ms = int((time.perf_counter() - start_ts) * 1000)
+        full_answer = append_disclaimer("".join(assistant_chunks))
 
-        await self.chat_store.store_message(
-            chat_id,
-            role="user",
-            content=message,
-        )
-        await self.chat_store.store_message(
-            chat_id,
+        await self.msg_repo.create_message(
+            chat_id=chat_id,
             role="assistant",
-            content=llm_final_response,
+            content=full_answer,
+            token_count=total_tokens,
         )
 
-        return llm_final_response, chat_id
-
-    async def _gather_context_lines(self, tickers: List[str]) -> List[str]:
-        """
-        Concurrently fetch sentiment and prediction for each ticker
-        and return a list of enriched prompt lines.
-        """
-        if not tickers:
-            return []
-
-        tasks = []
-        for ticker in tickers:
-            tasks.append(fetch_sentiment_summary(ticker))
-            tasks.append(fetch_price_prediction(ticker))
-
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-
-        context = []
-        for i in range(0, len(results), 2):
-            sentiment_result = results[i]
-            prediction_result = results[i + 1]
-            ticker = tickers[i // 2]
-
-            if not isinstance(sentiment_result, Exception):
-                context.append(f"Sentiment on {ticker}: {sentiment_result}")
-
-            if not isinstance(prediction_result, Exception):
-                context.append(f"Prediction for {ticker}: {prediction_result}")
-
-        return context
+        yield "", True, total_tokens
+        logger.info("chat=%s tokens=%d latency=%dms",
+                    chat_id, total_tokens, latency_ms)

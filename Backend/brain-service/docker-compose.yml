@@ -1,32 +1,38 @@
-version: '3.8'
+version: "3.8"
 
 services:
-  app:
+  brain-service:
+    container_name: brain-service
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "50051:50051"
+    env_file:
+      - .env
     depends_on:
-      - postgres
-    environment:
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DBNAME=x_service
-      - POSTGRES_SSLMODE=disable
+      postgres:
+        condition: service_healthy
+    ports:
+      - "9090:9090"
+      - "8080:8080"
+    restart: unless-stopped
 
   postgres:
     image: postgres:15-alpine
+    container_name: brain-postgres
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB:       ${POSTGRES_DB:-brain_db}
     ports:
       - "5432:5432"
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=x_service
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
 volumes:
   postgres_data:

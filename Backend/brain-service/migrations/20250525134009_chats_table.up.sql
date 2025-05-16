@@ -2,9 +2,9 @@
 -- +migrate Up
 -- +goose StatementBegin
 CREATE TABLE chats (
-    id          SERIAL PRIMARY KEY,
-    user_id     UUID NOT NULL,
-    title       TEXT,
+    id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id     UUID NOT NULL, -- auth-service
+    title       TEXT NOT NULL,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
