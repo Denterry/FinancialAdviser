@@ -1,10 +1,12 @@
-# X Service
+# Brain Service
 
-A microservice for handling Twitter posts, built with Go and following clean architecture principles.
+A microservice for handling financial analysis and recommendations, built with Go and following clean architecture principles.
 
 ## Features
 
-- Tweet management (create, read, update, delete)
+- Financial data analysis and processing
+- Investment recommendations generation
+- Market trend analysis
 - gRPC API
 - PostgreSQL database
 - Docker support
@@ -15,14 +17,13 @@ A microservice for handling Twitter posts, built with Go and following clean arc
 - Go 1.21 or higher
 - Docker and Docker Compose
 - PostgreSQL 15 or higher
-- Make
 
 ## Getting Started
 
 1. Clone the repository:
 ```bash
 git clone https://github.com/Denterry/FinancialAdviser.git
-cd Backend/x-service
+cd Backend/brain-service
 ```
 
 2. Install dependencies:
@@ -46,55 +47,16 @@ make docker-build
 make docker-run
 ```
 
-## Project Structure
-
-```
-.
-├── cmd/
-│   └── app/
-│       └── main.go
-├── config/
-│   └── config.yaml
-├── internal/
-│   ├── app/
-│   │   └── app.go
-│   ├── controller/
-│   │   └── grpc/
-│   │       └── auth.go
-│   ├── entity/
-│   │   └── user.go
-│   ├── repo/
-│   │   ├── contracts.go
-│   │   └── persistent/
-│   │       └── user_postgres.go
-│   └── usecase/
-│       └── auth/
-│           ├── auth.go
-│           └── token.go
-├── migrations/
-│   └── 000001_init.up.sql
-├── pkg/
-│   ├── config/
-│   │   └── config.go
-│   ├── grpcserver/
-│   │   └── server.go
-│   ├── logger/
-│   │   └── logger.go
-│   └── postgres/
-│       └── postgres.go
-├── Dockerfile
-├── docker-compose.yml
-├── go.mod
-├── go.sum
-├── Makefile
-└── README.md
-```
-
 ## API Documentation
 
-The service exposes a gRPC API on port 50051. You can find the protocol buffer definitions in the `internal/controller/grpc/proto` directory.
+The service exposes a gRPC API on port 50051. You can find the protocol buffer definitions in the `internal/controller/grpc/proto` directory
 
 ## Development
+
+### Generate Protocol Buffers
+```bash
+make proto-all
+```
 
 ### Running Tests
 
@@ -123,4 +85,49 @@ make migrate-up
 To rollback migrations:
 ```bash
 make migrate-down
+```
+
+
+## Project Structure
+
+```
+.
+├── cmd/
+│   └── app/
+│       └── main.go
+├── config/
+│   └── config.yaml
+├── internal/
+│   ├── app/
+│   │   └── app.go
+│   ├── controller/
+│   │   └── grpc/
+│   │       └── brain.go
+│   ├── entity/
+│   │   └── analysis.go
+│   ├── repo/
+│   │   ├── contracts.go
+│   │   └── persistent/
+│   │       └── analysis_postgres.go
+│   └── usecase/
+│       └── analysis/
+│           ├── analysis.go
+│           └── recommendation.go
+├── migrations/
+│   └── 000001_init.up.sql
+├── pkg/
+│   ├── config/
+│   │   └── config.go
+│   ├── grpcserver/
+│   │   └── server.go
+│   ├── logger/
+│   │   └── logger.go
+│   └── postgres/
+│       └── postgres.go
+├── Dockerfile
+├── docker-compose.yml
+├── go.mod
+├── go.sum
+├── Makefile
+└── README.md
 ```
