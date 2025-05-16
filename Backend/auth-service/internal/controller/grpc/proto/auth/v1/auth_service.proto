@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package auth.v1;
+
+option go_package = "github.com/Denterry/FinancialAdviser/Backend/auth-service/pkg/pb/auth/v1;authpb";
+
+
+// --- SERVICE ---
+service AuthService {
+    // SignIn authenticates a user and returns a JWT token
+    rpc SignIn(SignInRequest) returns (SignInResponse);
+
+    // SignUp registers a new user
+    rpc SignUp(SignUpRequest) returns (SignUpResponse);
+
+    // ValidateToken validates a JWT token and returns user information
+    rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+}
+
+
+// --- REQUESTS & RESPONSES ---
+message SignInRequest {
+    string email = 1;
+    string password = 2;
+}
+message SignInResponse {
+    string token = 1; // JWT token
+    string user_id = 2; // user UUID
+}
+
+
+message SignUpRequest {
+    string email = 1;
+    string password = 2;
+    string username = 3;
+}
+message SignUpResponse {
+    string token = 1; // JWT token
+    string user_id = 2; // user UUID
+}
+
+
+message ValidateTokenRequest {
+    string token = 1; // JWT token
+}
+message ValidateTokenResponse {
+    bool is_valid = 1; // whether the token is valid
+    string user_id = 2; // user UUID
+    string email = 3;
+    string username = 4;
+    bool is_admin = 5;
+}
+
+// --- ADVANCED MESSAGES ---
+message User {
+    string id = 1; // user UUID
+    string email = 2;
+    string username = 3;
+    bool is_admin = 4;
+    string created_at = 5;
+    string updated_at = 6;
+}

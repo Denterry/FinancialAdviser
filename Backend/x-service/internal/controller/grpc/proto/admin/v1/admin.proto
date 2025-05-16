@@ -1,0 +1,116 @@
+syntax = "proto3";
+
+package admin.v1;
+
+option go_package = "github.com/Denterry/FinancialAdviser/Backend/x-service/pkg/pb/admin/v1;adminpb";
+
+
+// --- SERVICE ---
+service AdminTweetService {
+  // CreateTweet creates a new tweet
+  rpc CreateTweet(CreateTweetRequest) returns (CreateTweetResponse) {}
+  
+  // GetTweet retrieves a tweet by ID
+  rpc GetTweet(GetTweetRequest) returns (GetTweetResponse) {}
+  
+  // ListTweets retrieves tweets with optional filtering
+  rpc ListTweets(ListTweetsRequest) returns (ListTweetsResponse) {}
+  
+  // UpdateTweet updates an existing tweet
+  rpc UpdateTweet(UpdateTweetRequest) returns (UpdateTweetResponse) {}
+  
+  // DeleteTweet removes a tweet
+  rpc DeleteTweet(DeleteTweetRequest) returns (DeleteTweetResponse) {}
+  
+  // GetTweetsBySymbol retrieves tweets mentioning a specific financial symbol
+  rpc GetTweetsBySymbol(GetTweetsBySymbolRequest) returns (GetTweetsBySymbolResponse) {}
+  
+  // GetTweetsBySentiment retrieves tweets with specific sentiment
+  rpc GetTweetsBySentiment(GetTweetsBySentimentRequest) returns (GetTweetsBySentimentResponse) {}
+}
+
+
+// --- REQUESTS & RESPONSES ---
+message CreateTweetRequest {
+  string text = 1;
+  string author_id = 2;
+}
+message CreateTweetResponse {
+  Tweet tweet = 1;
+}
+
+message GetTweetRequest {
+  string id = 1;
+}
+message GetTweetResponse {
+  Tweet tweet = 1;
+}
+
+message ListTweetsRequest {
+  string author_id = 1;
+  bool is_financial = 2;
+  string sentiment_label = 3;
+  repeated string symbols = 4;
+  int64 start_time = 5;
+  int64 end_time = 6;
+  int32 limit = 7;
+  int32 offset = 8;
+}
+message ListTweetsResponse {
+  repeated Tweet tweets = 1;
+}
+
+message UpdateTweetRequest {
+  string id = 1;
+  string text = 2;
+  Sentiment sentiment = 3;
+  Engagement engagement = 4;
+}
+message UpdateTweetResponse {
+  Tweet tweet = 1;
+}
+
+message DeleteTweetRequest {
+  string id = 1;
+}
+message DeleteTweetResponse {}
+
+message GetTweetsBySymbolRequest {
+  string symbol = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+message GetTweetsBySymbolResponse {
+  repeated Tweet tweets = 1;
+}
+
+message GetTweetsBySentimentRequest {
+  string label = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+message GetTweetsBySentimentResponse {
+  repeated Tweet tweets = 1;
+}
+
+// --- ADVANCED MESSAGES ---
+message Tweet {
+  string id = 1;
+  string text = 2;
+  string author_id = 3;
+  int64 created_at = 4;
+  int64 updated_at = 5;
+  Sentiment sentiment = 6;
+  bool is_financial = 7;
+  repeated string symbols = 8;
+  Engagement engagement = 9;
+}
+message Sentiment {
+  double score = 1;
+  string label = 2;
+}
+message Engagement {
+  int32 retweet_count = 1;
+  int32 favorite_count = 2;
+  int32 reply_count = 3;
+}

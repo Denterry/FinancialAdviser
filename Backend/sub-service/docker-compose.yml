@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  subscription-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - SERVER_PORT=8080
+      - SERVER_HOST=0.0.0.0
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=subscription_db
+      - DB_SSL_MODE=disable
+      - JWT_SECRET=your_jwt_secret_key
+      - JWT_EXPIRATION=24
+      - JWT_REFRESH_EXPIRY=168
+      - STRIPE_SECRET_KEY=your_stripe_secret_key
+      - STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
+      - STRIPE_SUCCESS_URL=http://localhost:3000/success
+      - STRIPE_CANCEL_URL=http://localhost:3000/cancel
+      - DEFAULT_CURRENCY=USD
+      - PAYMENT_METHODS=card,bank_transfer
+      - AUTO_RENEWAL_ENABLED=true
+      - GRACE_PERIOD_DAYS=3
+      - SUBSCRIPTION_DURATION=30
+      - LOG_LEVEL=info
+      - LOG_FILE=subscription.log
+    depends_on:
+      - postgres
+    networks:
+      - financial-adviser-network
+
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=subscription_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    networks:
+      - financial-adviser-network
+
+volumes:
+  postgres_data:
+
+networks:
+  financial-adviser-network:
+    external: true

@@ -1,0 +1,170 @@
+syntax = "proto3";
+
+package subscription.v1;
+
+option go_package = "github.com/Denterry/FinancialAdviser/Backend/sub-service/pkg/pb/subscription/v1";
+
+// Subscription service definition
+service SubscriptionService {
+  // Create a new subscription
+  rpc CreateSubscription(CreateSubscriptionRequest) returns (CreateSubscriptionResponse) {}
+  
+  // Get subscription details
+  rpc GetSubscription(GetSubscriptionRequest) returns (GetSubscriptionResponse) {}
+  
+  // List user's subscriptions
+  rpc ListSubscriptions(ListSubscriptionsRequest) returns (ListSubscriptionsResponse) {}
+  
+  // Update subscription
+  rpc UpdateSubscription(UpdateSubscriptionRequest) returns (UpdateSubscriptionResponse) {}
+  
+  // Cancel subscription
+  rpc CancelSubscription(CancelSubscriptionRequest) returns (CancelSubscriptionResponse) {}
+  
+  // Get subscription plans
+  rpc GetPlans(GetPlansRequest) returns (GetPlansResponse) {}
+  
+  // Process payment
+  rpc ProcessPayment(ProcessPaymentRequest) returns (ProcessPaymentResponse) {}
+}
+
+// Subscription plan types
+enum PlanType {
+  PLAN_TYPE_UNSPECIFIED = 0;
+  PLAN_TYPE_BASIC = 1;
+  PLAN_TYPE_PRO = 2;
+  PLAN_TYPE_ENTERPRISE = 3;
+}
+
+// Subscription status
+enum SubscriptionStatus {
+  SUBSCRIPTION_STATUS_UNSPECIFIED = 0;
+  SUBSCRIPTION_STATUS_ACTIVE = 1;
+  SUBSCRIPTION_STATUS_CANCELLED = 2;
+  SUBSCRIPTION_STATUS_EXPIRED = 3;
+  SUBSCRIPTION_STATUS_PENDING = 4;
+}
+
+// Payment status
+enum PaymentStatus {
+  PAYMENT_STATUS_UNSPECIFIED = 0;
+  PAYMENT_STATUS_PENDING = 1;
+  PAYMENT_STATUS_COMPLETED = 2;
+  PAYMENT_STATUS_FAILED = 3;
+  PAYMENT_STATUS_REFUNDED = 4;
+}
+
+// Plan definition
+message Plan {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  PlanType type = 4;
+  double price = 5;
+  string currency = 6;
+  int32 duration_days = 7;
+  repeated string features = 8;
+}
+
+// Subscription definition
+message Subscription {
+  string id = 1;
+  string user_id = 2;
+  string plan_id = 3;
+  SubscriptionStatus status = 4;
+  int64 start_date = 5;
+  int64 end_date = 6;
+  bool auto_renew = 7;
+  double amount_paid = 8;
+  string currency = 9;
+  string payment_method = 10;
+  int64 last_payment_date = 11;
+  int64 next_payment_date = 12;
+}
+
+// Create subscription request
+message CreateSubscriptionRequest {
+  string user_id = 1;
+  string plan_id = 2;
+  bool auto_renew = 3;
+  string payment_method = 4;
+}
+
+// Create subscription response
+message CreateSubscriptionResponse {
+  Subscription subscription = 1;
+  string payment_url = 2;
+}
+
+// Get subscription request
+message GetSubscriptionRequest {
+  string subscription_id = 1;
+}
+
+// Get subscription response
+message GetSubscriptionResponse {
+  Subscription subscription = 1;
+}
+
+// List subscriptions request
+message ListSubscriptionsRequest {
+  string user_id = 1;
+  SubscriptionStatus status = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+
+// List subscriptions response
+message ListSubscriptionsResponse {
+  repeated Subscription subscriptions = 1;
+  int32 total = 2;
+}
+
+// Update subscription request
+message UpdateSubscriptionRequest {
+  string subscription_id = 1;
+  bool auto_renew = 2;
+  string payment_method = 3;
+}
+
+// Update subscription response
+message UpdateSubscriptionResponse {
+  Subscription subscription = 1;
+}
+
+// Cancel subscription request
+message CancelSubscriptionRequest {
+  string subscription_id = 1;
+  string reason = 2;
+}
+
+// Cancel subscription response
+message CancelSubscriptionResponse {
+  Subscription subscription = 1;
+}
+
+// Get plans request
+message GetPlansRequest {
+  PlanType type = 1;
+}
+
+// Get plans response
+message GetPlansResponse {
+  repeated Plan plans = 1;
+}
+
+// Process payment request
+message ProcessPaymentRequest {
+  string subscription_id = 1;
+  double amount = 2;
+  string currency = 3;
+  string payment_method = 4;
+}
+
+// Process payment response
+message ProcessPaymentResponse {
+  string payment_id = 1;
+  PaymentStatus status = 2;
+  string transaction_id = 3;
+  int64 timestamp = 4;
+} 
